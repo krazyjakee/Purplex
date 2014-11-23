@@ -1,0 +1,11 @@
+{
+  "name": "Purplex",
+  "version": "0.0.1",
+  "description": "Puzzle Game",
+  "main": "index.html",
+  "scripts": {
+    "test": "chrome index.html"
+  },
+  "author": "",
+  "license": "ISC"
+}

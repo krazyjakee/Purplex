@@ -1,0 +1,209 @@
+# Special math functionality
+Math.seed = parseInt(location.hash.substring(1)) | 1
+Math.randomSeed = (max, min) ->
+  max = max || 1
+  min = min || 0
+  Math.seed = (Math.seed * 9301 + 49297) % 233280
+  rnd = Math.seed / 233280
+  return Math.floor(min + rnd * (max - min)) - 1
+
+# Let's go!
+class Game
+  
+  # Variables and constructor
+  initialSeed: Math.seed
+  enabled: false
+  id: false
+  mapSize: 13
+
+  constructor: ->
+    map = ""
+    for i in [0...(@mapSize * @mapSize)]
+      purple = (if i % 14 and i % 12 then "" else "purple")
+      map += "<div class='tile tile#{i} #{purple}' data-index='#{i}'><div class='tile-inner'></div></div>"
+    $('#map').html map
+    @score.setBest()
+
+    # Events
+    $('.tile:not(.purple)').click $.proxy((e) ->
+      that = @
+      if @enabled
+        index = parseInt $(e.currentTarget).attr("data-index")
+        @detectSameTiles index
+        if @item.active
+          points = @getRelatedTiles @item.active
+          p = (p for p in points when p is index)[0]
+          if p
+            @enabled = false
+            pre = @item.get @item.active
+            post = @item.get index
+            if pre is post and @item.active != index
+              @item.set index
+              @item.set @item.active
+              @score.add 5
+            else
+              @item.set index, pre
+              @item.set @item.active, post
+            setTimeout ->
+              that.detectSameTiles that.item.active
+              that.detectSameTiles index
+              that.enabled = true
+            , 500
+          else
+            @item.select index
+        else
+          @item.select index
+    , @)
+
+    $('.tile:not(.purple)').hover ->
+      $('.tile:not(.purple)').removeClass "lightgreen"
+      index = parseInt $(@).attr("data-index")
+      points = self.game.getRelatedTiles index
+      $(".tile#{p}").addClass "lightgreen" for p in points
+
+    $('#restartButton').click $.proxy(@timer.start, @)
+
+  # Timer features
+  timer:
+    timer: false
+    current: false
+    start: ->
+      that = @
+      Math.seed = that.initialSeed++
+      location.hash = "##{Math.seed}"
+      $('#map .tile:not(.purple)').each $.proxy((index, elem) ->
+        tileId = $(elem).attr('data-index')
+        @item.generate tileId
+      , @)
+
+      @enabled = true
+      @timer.current = (5 * 60)
+
+      $('.overlay, #restartButton').addClass 'hide'
+      $('#map').removeClass 'disabled'
+      $('.tile').removeClass "red green lightgreen"
+      $('#score').html 0
+      @score.setBest()
+
+      @timer.timer = setInterval ->
+        that.timer.current -= 1
+        that.timer.stop() unless that.timer.current
+        minutes = Math.floor(that.timer.current / 60)
+        minutes = ('0' + minutes).slice(-2)
+        seconds = that.timer.current - (60 * minutes)
+        seconds = ('0' + seconds).slice(-2)
+        $('#timer').html "#{minutes}:#{seconds}"
+      , 1000
+
+    stop: ->
+      that = self.game
+      score = that.score.get()
+      window.localStorage['last'] = score
+      window.localStorage['best'] = score if window.localStorage['best'] < score
+      clearInterval that.timer.timer
+      that.score.setBest()
+      $('.overlay, #restartButton').removeClass 'hide'
+      $('.tile').removeClass "red green lightgreen"
+      $('#map').addClass 'disabled'
+      that.enabled = false
+
+  item:
+    classes: ['red', 'yellow', 'blue', 'green', 'purple', 'orange']
+    active: false
+    random: -> @classes[Math.randomSeed(0, @classes.length + 1)]
+    generate: (tileId) ->
+      $("[data-index='#{tileId}'] div").attr("data-item", tileId)
+      .html '<span class="icon-' + @random() + '"></span>'
+    set: (tileId, item) ->
+      that = self.game
+      item = that.item.random() unless item
+      el = $('[data-index="'+tileId+'"] span')
+      el.parent().css "transform", "rotateY(90deg)"
+      setTimeout ->
+        el.attr 'class', ""
+        .addClass "icon-#{item}"
+        el.parent().css "transform", "rotateY(0deg)"
+      , 300
+    get: (tileId) -> $('[data-index="'+tileId+'"] span').attr('class').replace('icon-','')
+    select: (tileId) ->
+      that = self.game
+      $('.tile').removeClass "red green"
+      @active = tileId
+      points = that.getRelatedTiles parseInt(tileId)
+      $(".tile#{p}").addClass "red" for p in points
+      $(".tile#{tileId}").addClass "green"
+
+  getHoriLine: (index) ->
+    i = index
+    i-- if (i - 1) % 13
+    i-- while (i + 1) % 13 and i % 14 and i % 12
+    left = i
+    i = index
+    i++ while i % 14 and i % 12 and (i + 1) % 13
+    hori = []
+    while left < i
+      left++
+      hori.push(left) if left % 14 and left % 12
+    hori
+
+  getVertLine: (index) ->
+    i = index
+    i -= 13 while i % 14 and i % 12 and i > 12
+    top = i
+    top -= 13 if top < 26
+    i = index
+    i += 13 while i % 14 and i % 12 and i < 156
+    vert = []
+    while top < i
+      top += 13
+      vert.push(top) if top % 14 and top % 12
+    vert
+
+  detectSameTiles: (tileId) ->
+    vert = []
+    hori = []
+    vertIndex = @getVertLine tileId
+    horiIndex = @getHoriLine tileId
+    for v in vertIndex
+      v = @item.get v
+      vert.push v if v
+    for h in horiIndex
+      h = @item.get h
+      hori.push h if h
+
+    if vertIndex.length > 1
+      if $.unique(vert).length is 1
+        @item.set(i) for i in vertIndex
+        @score.add vertIndex.length * 10
+    if horiIndex.length > 1
+      if $.unique(hori).length is 1
+        @item.set(i) for i in horiIndex
+        @score.add horiIndex.length * 10
+
+  numberToCoord: (num) ->
+    y = 0
+    while num >= @mapSize
+      num -= @mapSize
+      y++
+    return { x: num - 6, y: y - 6 }
+
+  getRelatedTiles: (num) ->
+    point = @numberToCoord num
+    return (@getRotation(i, point) for i in [4..1])
+
+  getRotation: (num, point) ->
+    midCell = Math.floor((@mapSize * @mapSize) / 2)
+    switch num
+      when 1 then return midCell + @mapSize * (point.y) + point.x
+      when 2 then return midCell + @mapSize * point.x - (point.y)
+      when 3 then return midCell - @mapSize * (point.y) - point.x
+      when 4 then return midCell - @mapSize * point.x + (point.y)
+
+  score:
+    add: (input) -> $('#score').html @get() + input
+    get: -> parseInt $('#score').html()
+    setBest: ->
+      window.localStorage['best'] = 0 unless window.localStorage['best']?
+      window.localStorage['last'] = 0 unless window.localStorage['last']?
+      $('#last').html window.localStorage['last']
+      $('#best').html window.localStorage['best']
