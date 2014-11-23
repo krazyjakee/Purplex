@@ -64,7 +64,7 @@ menuObj = {
     textY: game.tileHeight / 2 - 15,
     color: 'white',
     click: function() {
-      draw.game(Math.seed);
+      draw.newGame(Math.seed);
       stage.addChild(game.tileContainer);
       return draw.beginScale();
     }

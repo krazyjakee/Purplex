@@ -55,7 +55,7 @@ menuObj =
     textY: game.tileHeight / 2 - 15
     color: 'white'
     click: ->
-      draw.game Math.seed
+      draw.newGame Math.seed
       stage.addChild game.tileContainer
       draw.beginScale()
 
