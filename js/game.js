@@ -24,12 +24,45 @@ game = {
   level: 1,
   tileWidth: 50,
   tileHeight: 35,
+  selectedTile: false,
+  selectedContainer: new createjs.Container(),
   followersContainer: new createjs.Container(),
   tileContainer: new createjs.Container(),
   grayscale: new createjs.ColorMatrixFilter([0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0, 0, 0, 1, 0]),
   sepia: new createjs.ColorMatrixFilter([0.39, 0.77, 0.19, 0, 0, 0.35, 0.68, 0.17, 0, 0, 0.27, 0.53, 0.13, 0, 0, 0, 0, 0, 1, 0]),
-  tileClick: function() {
-    return console.log(this);
+  tileClick: function(e) {
+    var color, i, index, others, point, selected, tileId, _i, _len, _ref, _results;
+    tileId = e.currentTarget.tileId;
+    game.selectedTile = tileId;
+    if (tileId % 14 && tileId % 12) {
+      point = utilities.numberToRotationCoord(tileId);
+      others = (function() {
+        var _i, _results;
+        _results = [];
+        for (i = _i = 4; _i >= 1; i = --_i) {
+          _results.push(utilities.getRotation(i, point));
+        }
+        return _results;
+      })();
+      _ref = game.selectedContainer.children;
+      _results = [];
+      for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
+        selected = _ref[index];
+        point = utilities.numberToCoord(others[index]);
+        selected.tileId = others[index];
+        point.x *= game.tileWidth;
+        point.y *= game.tileHeight;
+        selected.x = point.x + (game.tileWidth / 2);
+        selected.y = point.y + (game.tileHeight / 2);
+        if (others[index] === tileId) {
+          color = 'black';
+        } else {
+          color = game.getTile(others[index]).color;
+        }
+        _results.push(selected.graphics.clear().beginFill(color).drawRect(0, 0, 18, 18));
+      }
+      return _results;
+    }
   },
   tileHover: function(e) {
     var follower, i, index, others, point, tileId, _i, _len, _ref, _results;
@@ -55,10 +88,16 @@ game = {
         _results.push(createjs.Tween.get(follower).to({
           x: point.x + (game.tileWidth / 2),
           y: point.y + (game.tileHeight / 2)
-        }, 300));
+        }, 200));
       }
       return _results;
     }
+  },
+  getSelectedTile: function() {
+    return game.tileContainer.children[game.selectedTile];
+  },
+  getTile: function(tileId) {
+    return game.tileContainer.children[tileId];
   }
 };
 
@@ -68,17 +107,15 @@ draw = {
     if (color == null) {
       color = false;
     }
-    tile = new createjs.Container();
-    filler = new createjs.Shape();
-    filler.graphics.beginFill('rgba(0,0,0,0.01)').drawRect(0, 0, game.tileWidth, game.tileHeight);
-    shape = new createjs.Shape();
     coord = utilities.numberToCoord(tileId);
     x = coord.x * game.tileWidth;
     y = coord.y * game.tileHeight;
+    tile = new createjs.Container();
     tile.x = x;
     tile.y = y;
     tile.width = game.tileWidth;
     tile.height = game.tileHeight;
+    shape = new createjs.Shape();
     if (tileId % 14 && tileId % 12) {
       shape.graphics.beginFill(color).drawCircle(game.tileWidth / 2, game.tileHeight / 2, 10);
       shape.scaleX = 0.0;
@@ -88,11 +125,14 @@ draw = {
     } else {
       shape.graphics.beginFill("purple").drawRect(0, 0, game.tileWidth, game.tileHeight);
     }
-    tile.addChild(shape, filler);
+    filler = new createjs.Shape();
+    filler.graphics.beginFill('rgba(255,255,255,0.01)').drawRect(0, 0, game.tileWidth, game.tileHeight);
     tile.tileId = tileId;
-    game.tileContainer.addChild(tile);
+    tile.color = color;
+    tile.addChild(shape, filler);
     tile.addEventListener('click', game.tileClick);
-    return tile.addEventListener('rollover', game.tileHover);
+    tile.addEventListener('rollover', game.tileHover);
+    return game.tileContainer.addChild(tile);
   },
   newGame: function(gameId) {
     var i, _i;
@@ -102,18 +142,37 @@ draw = {
     for (i = _i = 0; _i < 169; i = ++_i) {
       draw.tile(i, utilities.randomColor());
     }
-    return draw.followers();
+    draw.followers();
+    return draw.selected();
   },
   followers: function() {
     var i, shape, _i;
     for (i = _i = 0; _i <= 4; i = ++_i) {
       shape = new createjs.Shape();
-      shape.graphics.beginFill('black').drawCircle(0, 0, 12);
+      shape.graphics.beginFill('black').drawCircle(0, 0, 11);
       shape.x = (game.tileWidth * 6) + (game.tileWidth / 2);
       shape.y = (game.tileHeight * 6) + (game.tileHeight / 2);
       game.followersContainer.addChild(shape);
     }
     return stage.addChild(game.followersContainer);
+  },
+  selected: function() {
+    var i, shape, _i;
+    for (i = _i = 0; _i < 4; i = ++_i) {
+      shape = new createjs.Shape();
+      shape.graphics.beginFill('black').drawRect(0, 0, 18, 18);
+      shape.x = (game.tileWidth * 6) + (game.tileWidth / 2);
+      shape.y = (game.tileHeight * 6) + (game.tileHeight / 2);
+      shape.regX = 9;
+      shape.regY = 9;
+      createjs.Tween.get(shape, {
+        loop: true
+      }).to({
+        rotation: 360
+      }, 5000);
+      game.selectedContainer.addChild(shape);
+    }
+    return stage.addChild(game.selectedContainer);
   },
   beginScale: function() {
     var tile, tileId, _i, _len, _ref, _results;
@@ -128,8 +187,6 @@ draw = {
           scaleX: 1.0,
           scaleY: 1.0
         }, 500));
-      } else {
-        _results.push(void 0);
       }
     }
     return _results;
@@ -218,7 +275,7 @@ utilities = {
   },
   randomColor: function() {
     var colors;
-    colors = ['red', 'yellow', 'blue', 'green', 'purple', 'orange'];
+    colors = ['#FF0000', '#FFFF00', '#0066FF', '#009933', '#9900CC', '#FF9933'];
     return colors[Math.randomSeed(0, colors.length + 1)];
   }
 };
