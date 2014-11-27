@@ -1,7 +1,9 @@
 stage = new createjs.Stage "canvas"
-stage.fillStyle = "#000"
+stage.top = 5
 createjs.Ticker.addEventListener "tick", stage
 stage.enableMouseOver()
+
+purple = "#9900CC";
 
 Math.seed = 1
 Math.randomSeed = (max, min) ->
@@ -34,7 +36,6 @@ game =
   ])
   tileClick: (e) ->
     tileId = e.currentTarget.tileId
-    game.selectedTile = tileId
     if tileId % 14 and tileId % 12
       point = utilities.numberToRotationCoord tileId
       others = (utilities.getRotation(i, point) for i in [4..1])
@@ -47,11 +48,33 @@ game =
         selected.x = point.x + (game.tileWidth / 2)
         selected.y = point.y + (game.tileHeight / 2)
 
-        if others[index] is tileId
-          color = 'black'
+        color = game.getTile(others[index]).color
+        color = '#666666' if others[index] is tileId
+
+        selected.graphics.clear().beginFill(color).drawRect 0, 0, 20, 20
+
+      # check for tile combinations
+      if game.selectedTile
+        point = utilities.numberToRotationCoord game.selectedTile
+        others = (utilities.getRotation(i, point) for i in [4..1])
+        p = (p for p in others when p is tileId)
+        if p.length
+          pre = game.getTile game.selectedTile
+          post = game.getTile tileId
+          if pre.color is post.color and game.selectedTile != tileId
+            game.setTile tileId
+            game.setTile game.selectedTile
+            # score.add 5
+          else
+            c1 = pre.color
+            c2 = post.color
+            game.setTile tileId, c1
+            game.setTile game.selectedTile, c2
         else
-          color = game.getTile(others[index]).color
-        selected.graphics.clear().beginFill(color).drawRect 0, 0, 18, 18
+          game.selectedTile = tileId
+
+      else
+        game.selectedTile = tileId
 
   tileHover: (e) ->
     tileId = e.currentTarget.tileId
@@ -68,6 +91,12 @@ game =
 
   getSelectedTile: -> return game.tileContainer.children[game.selectedTile]
   getTile: (tileId) -> return game.tileContainer.children[tileId]
+  setTile: (tileId, color = false) ->
+    color = utilities.randomColor() unless color
+    console.log "set #{tileId} to #{color}"
+    tile = game.tileContainer.children[tileId]
+    tile.children[1].graphics.clear().beginFill(color).drawCircle (game.tileWidth / 2), (game.tileHeight / 2), 10
+    tile.color = color
 
 draw = 
   tile: (tileId, color = false) ->
@@ -89,7 +118,7 @@ draw =
       shape.x = (game.tileWidth / 2)
       shape.y = (game.tileHeight / 2)
     else
-      shape.graphics.beginFill("purple").drawRect 0, 0, game.tileWidth, game.tileHeight
+      shape.graphics.beginFill("transparent").drawRect 0, 0, game.tileWidth, game.tileHeight
 
     filler = new createjs.Shape()
     filler.graphics.beginFill('rgba(255,255,255,0.01)').drawRect 0, 0, game.tileWidth, game.tileHeight
@@ -110,10 +139,11 @@ draw =
     draw.followers()
     draw.selected()
 
+
   followers: ->
-    for i in [0..4]
+    for i in [0...4]
       shape = new createjs.Shape()
-      shape.graphics.beginFill('black').drawCircle 0, 0, 11
+      shape.graphics.beginFill('#666666').drawCircle 0, 0, 12
       shape.x = (game.tileWidth * 6) + (game.tileWidth / 2)
       shape.y = (game.tileHeight * 6) + (game.tileHeight / 2)
       game.followersContainer.addChild shape
@@ -122,11 +152,11 @@ draw =
   selected: ->
     for i in [0...4]
       shape = new createjs.Shape()
-      shape.graphics.beginFill('black').drawRect 0, 0, 18, 18
+      shape.graphics.beginFill('#666666').drawRect 0, 0, 20, 20
       shape.x = (game.tileWidth * 6) + (game.tileWidth / 2)
       shape.y = (game.tileHeight * 6) + (game.tileHeight / 2)
-      shape.regX = 9
-      shape.regY = 9
+      shape.regX = 10
+      shape.regY = 10
       createjs.Tween.get shape, { loop: true }
       .to { rotation: 360 }, 5000
       game.selectedContainer.addChild shape
@@ -194,5 +224,5 @@ utilities =
       when 4 then return midCell - 13 * point.x + (point.y)
 
   randomColor: ->
-    colors = ['#FF0000', '#FFFF00', '#0066FF', '#009933', '#9900CC', '#FF9933']
+    colors = ['#FF0000', '#FFFF00', '#0066FF', '#009933', '#FF9933']
     colors[Math.randomSeed(0, colors.length + 1)]

@@ -1,12 +1,14 @@
-var draw, game, stage, utilities;
+var draw, game, purple, stage, utilities;
 
 stage = new createjs.Stage("canvas");
 
-stage.fillStyle = "#000";
+stage.top = 5;
 
 createjs.Ticker.addEventListener("tick", stage);
 
 stage.enableMouseOver();
+
+purple = "#9900CC";
 
 Math.seed = 1;
 
@@ -31,9 +33,8 @@ game = {
   grayscale: new createjs.ColorMatrixFilter([0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0, 0, 0, 1, 0]),
   sepia: new createjs.ColorMatrixFilter([0.39, 0.77, 0.19, 0, 0, 0.35, 0.68, 0.17, 0, 0, 0.27, 0.53, 0.13, 0, 0, 0, 0, 0, 1, 0]),
   tileClick: function(e) {
-    var color, i, index, others, point, selected, tileId, _i, _len, _ref, _results;
+    var c1, c2, color, i, index, others, p, point, post, pre, selected, tileId, _i, _len, _ref;
     tileId = e.currentTarget.tileId;
-    game.selectedTile = tileId;
     if (tileId % 14 && tileId % 12) {
       point = utilities.numberToRotationCoord(tileId);
       others = (function() {
@@ -45,7 +46,6 @@ game = {
         return _results;
       })();
       _ref = game.selectedContainer.children;
-      _results = [];
       for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
         selected = _ref[index];
         point = utilities.numberToCoord(others[index]);
@@ -54,14 +54,51 @@ game = {
         point.y *= game.tileHeight;
         selected.x = point.x + (game.tileWidth / 2);
         selected.y = point.y + (game.tileHeight / 2);
+        color = game.getTile(others[index]).color;
         if (others[index] === tileId) {
-          color = 'black';
-        } else {
-          color = game.getTile(others[index]).color;
+          color = '#666666';
         }
-        _results.push(selected.graphics.clear().beginFill(color).drawRect(0, 0, 18, 18));
+        selected.graphics.clear().beginFill(color).drawRect(0, 0, 20, 20);
       }
-      return _results;
+      if (game.selectedTile) {
+        point = utilities.numberToRotationCoord(game.selectedTile);
+        others = (function() {
+          var _j, _results;
+          _results = [];
+          for (i = _j = 4; _j >= 1; i = --_j) {
+            _results.push(utilities.getRotation(i, point));
+          }
+          return _results;
+        })();
+        p = (function() {
+          var _j, _len1, _results;
+          _results = [];
+          for (_j = 0, _len1 = others.length; _j < _len1; _j++) {
+            p = others[_j];
+            if (p === tileId) {
+              _results.push(p);
+            }
+          }
+          return _results;
+        })();
+        if (p.length) {
+          pre = game.getTile(game.selectedTile);
+          post = game.getTile(tileId);
+          if (pre.color === post.color && game.selectedTile !== tileId) {
+            game.setTile(tileId);
+            return game.setTile(game.selectedTile);
+          } else {
+            c1 = pre.color;
+            c2 = post.color;
+            game.setTile(tileId, c1);
+            return game.setTile(game.selectedTile, c2);
+          }
+        } else {
+          return game.selectedTile = tileId;
+        }
+      } else {
+        return game.selectedTile = tileId;
+      }
     }
   },
   tileHover: function(e) {
@@ -98,6 +135,19 @@ game = {
   },
   getTile: function(tileId) {
     return game.tileContainer.children[tileId];
+  },
+  setTile: function(tileId, color) {
+    var tile;
+    if (color == null) {
+      color = false;
+    }
+    if (!color) {
+      color = utilities.randomColor();
+    }
+    console.log("set " + tileId + " to " + color);
+    tile = game.tileContainer.children[tileId];
+    tile.children[1].graphics.clear().beginFill(color).drawCircle(game.tileWidth / 2, game.tileHeight / 2, 10);
+    return tile.color = color;
   }
 };
 
@@ -123,7 +173,7 @@ draw = {
       shape.x = game.tileWidth / 2;
       shape.y = game.tileHeight / 2;
     } else {
-      shape.graphics.beginFill("purple").drawRect(0, 0, game.tileWidth, game.tileHeight);
+      shape.graphics.beginFill("transparent").drawRect(0, 0, game.tileWidth, game.tileHeight);
     }
     filler = new createjs.Shape();
     filler.graphics.beginFill('rgba(255,255,255,0.01)').drawRect(0, 0, game.tileWidth, game.tileHeight);
@@ -147,9 +197,9 @@ draw = {
   },
   followers: function() {
     var i, shape, _i;
-    for (i = _i = 0; _i <= 4; i = ++_i) {
+    for (i = _i = 0; _i < 4; i = ++_i) {
       shape = new createjs.Shape();
-      shape.graphics.beginFill('black').drawCircle(0, 0, 11);
+      shape.graphics.beginFill('#666666').drawCircle(0, 0, 12);
       shape.x = (game.tileWidth * 6) + (game.tileWidth / 2);
       shape.y = (game.tileHeight * 6) + (game.tileHeight / 2);
       game.followersContainer.addChild(shape);
@@ -160,11 +210,11 @@ draw = {
     var i, shape, _i;
     for (i = _i = 0; _i < 4; i = ++_i) {
       shape = new createjs.Shape();
-      shape.graphics.beginFill('black').drawRect(0, 0, 18, 18);
+      shape.graphics.beginFill('#666666').drawRect(0, 0, 20, 20);
       shape.x = (game.tileWidth * 6) + (game.tileWidth / 2);
       shape.y = (game.tileHeight * 6) + (game.tileHeight / 2);
-      shape.regX = 9;
-      shape.regY = 9;
+      shape.regX = 10;
+      shape.regY = 10;
       createjs.Tween.get(shape, {
         loop: true
       }).to({
@@ -275,7 +325,7 @@ utilities = {
   },
   randomColor: function() {
     var colors;
-    colors = ['#FF0000', '#FFFF00', '#0066FF', '#009933', '#9900CC', '#FF9933'];
+    colors = ['#FF0000', '#FFFF00', '#0066FF', '#009933', '#FF9933'];
     return colors[Math.randomSeed(0, colors.length + 1)];
   }
 };
