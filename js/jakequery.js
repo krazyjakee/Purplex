@@ -132,11 +132,12 @@
       });
     };
 
-    jakeQuery.prototype.changeColor = function(shape, color) {
+    jakeQuery.prototype.changeColor = function(shape, color, x, y) {
       switch (shape.type) {
         case "circle":
-          return shape.graphics.clear().beginFill(color).drawCircle(0, 0, shape.radius);
+          shape.graphics.clear().beginFill(color).drawCircle(x, y, shape.radius);
       }
+      return shape.color = color;
     };
 
     jakeQuery.prototype.animate = function(properties, delay, duration, easing, complete) {

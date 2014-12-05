@@ -80,9 +80,10 @@ class jakeQuery
     @iterate (elem) ->
       elem.addChild(child)
 
-  changeColor: (shape, color) ->
+  changeColor: (shape, color, x, y) ->
     switch shape.type
-      when "circle" then shape.graphics.clear().beginFill(color).drawCircle 0, 0, shape.radius
+      when "circle" then shape.graphics.clear().beginFill(color).drawCircle x, y, shape.radius
+    shape.color = color
 
   animate: (properties, delay = 0, duration = 0, easing = 'linear', complete = false) ->
     unless complete
