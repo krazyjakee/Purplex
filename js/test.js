@@ -1,5 +1,23 @@
 (function() {
-  var click, drawGame, game, hoverIn, hoverOut, swap, swapAnimation, utilities;
+  var changeColor, click, detectSameTiles, drawGame, game, getHoriLine, getVertLine, hoverIn, hoverOut, swap, swapAnimation, utilities;
+
+  Array.prototype.unique = function() {
+    var a, i, l, u;
+    u = {};
+    a = [];
+    i = 0;
+    l = this.length;
+    while (i < l) {
+      if (u.hasOwnProperty(this[i])) {
+        ++i;
+        continue;
+      }
+      a.push(this[i]);
+      u[this[i]] = 1;
+      ++i;
+    }
+    return a;
+  };
 
   Math.seed = 1;
 
@@ -91,14 +109,14 @@
         y: -(game.tileHeight / 4),
         scaleX: 1.5,
         scaleY: 1.5
-      }, 0, 250);
+      }, 0, 125);
     }
     return $(tc.children[tileId].children[0]).animate({
       x: -(game.tileWidth / 2),
       y: -(game.tileHeight / 2),
       scaleX: 2.0,
       scaleY: 2.0
-    }, 0, 250);
+    }, 0, 125);
   };
 
   hoverOut = function(tileId) {
@@ -121,9 +139,34 @@
         y: 0,
         scaleX: 1,
         scaleY: 1
-      }, 0, 250));
+      }, 0, 125));
     }
     return _results;
+  };
+
+  changeColor = function(tile, newColor) {
+    if (newColor == null) {
+      newColor = false;
+    }
+    if (!newColor) {
+      newColor = utilities.randomColor();
+    }
+    return $(tile.children[0]).animate({
+      x: game.tileWidth / 2,
+      y: game.tileHeight / 2,
+      scaleX: 0,
+      scaleY: 0
+    }, 0, 125, 'linear', function() {
+      $.changeColor(this, newColor, game.tileWidth / 2, game.tileHeight / 2);
+      return $(this).animate({
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1
+      }, 0, 125, 'linear', function() {
+        return detectSameTiles(tile.tileId);
+      });
+    });
   };
 
   swapAnimation = function(source, destination, color) {
@@ -149,7 +192,7 @@
     $(source).animate({
       x: destination.x,
       y: destination.y
-    }, 0, 250, 'linear', function() {
+    }, 0, 125, 'linear', function() {
       source.x = sourcePrevious.x;
       source.y = sourcePrevious.y;
       return $.changeColor(this.children[0], color2, game.tileWidth / 2, game.tileHeight / 2);
@@ -157,14 +200,16 @@
     $(destination).animate({
       x: source.x,
       y: source.y
-    }, 0, 250, 'linear', function() {
+    }, 0, 125, 'linear', function() {
       destination.x = destinationPrevious.x;
       destination.y = destinationPrevious.y;
       return $.changeColor(this.children[0], color1, game.tileWidth / 2, game.tileHeight / 2);
     });
     return setTimeout(function() {
-      return hoverOut(source.tileId);
-    }, 350);
+      hoverOut(source.tileId);
+      detectSameTiles(source.tileId);
+      return detectSameTiles(destination.tileId);
+    }, 150);
   };
 
   swap = function(source, destination) {
@@ -218,8 +263,8 @@
         i = others[_i];
         if (i === game.selectedTile) {
           swapped = true;
-          swap(game.tileContainer.children[game.selectedTile], e.currentTarget);
-          hoverOut(game.selectedTile);
+          swap(game.tileContainer.children[i], e.currentTarget);
+          hoverOut(i);
         }
       }
       hoverIn(game.selectedTile);
@@ -230,6 +275,97 @@
     } else {
       hoverIn(tileId);
       return game.selectedTile = e.currentTarget.tileId;
+    }
+  };
+
+  getHoriLine = function(index) {
+    var hori, i, left;
+    i = index;
+    if ((i - 1) % game.size) {
+      i--;
+    }
+    while ((i + 1) % game.size && i % (game.size + 1) && i % (game.size - 1)) {
+      i--;
+    }
+    left = i;
+    i = index;
+    while (i % (game.size + 1) && i % (game.size - 1) && (i + 1) % game.size) {
+      i++;
+    }
+    hori = [];
+    while (left < i) {
+      left++;
+      if (left % (game.size + 1) && left % (game.size - 1)) {
+        hori.push(left);
+      }
+    }
+    return hori;
+  };
+
+  getVertLine = function(index) {
+    var i, top, vert;
+    i = index;
+    while (i % (game.size + 1) && i % (game.size - 1) && i > (game.size - 1)) {
+      i -= game.size;
+    }
+    top = i;
+    if (top < (game.size * 2)) {
+      top -= game.size;
+    }
+    i = index;
+    while (i % (game.size + 1) && i % (game.size - 1) && i < (game.size * (game.size - 1))) {
+      i += game.size;
+    }
+    vert = [];
+    while (top < i) {
+      top += game.size;
+      if (top % (game.size + 1) && top % (game.size - 1)) {
+        vert.push(top);
+      }
+    }
+    return vert;
+  };
+
+  detectSameTiles = function(tileId) {
+    var h, hori, horiIndex, i, tc, v, vert, vertIndex, _i, _j, _k, _l, _len, _len1, _len2, _len3, _results;
+    console.log("Started detection");
+    vert = [];
+    hori = [];
+    tc = $(game.tileContainer)[0];
+    vertIndex = getVertLine(tileId);
+    horiIndex = getHoriLine(tileId);
+    for (_i = 0, _len = vertIndex.length; _i < _len; _i++) {
+      v = vertIndex[_i];
+      v = tc.children[v].children[0].color;
+      if (v) {
+        vert.push(v);
+      }
+    }
+    for (_j = 0, _len1 = horiIndex.length; _j < _len1; _j++) {
+      h = horiIndex[_j];
+      h = tc.children[h].children[0].color;
+      if (h) {
+        hori.push(h);
+      }
+    }
+    console.log(hori.unique());
+    if (vertIndex.length > 1) {
+      if (vert.unique().length === 1) {
+        for (_k = 0, _len2 = vertIndex.length; _k < _len2; _k++) {
+          i = vertIndex[_k];
+          changeColor(tc.children[i]);
+        }
+      }
+    }
+    if (horiIndex.length > 1) {
+      if (hori.unique().length === 1) {
+        _results = [];
+        for (_l = 0, _len3 = horiIndex.length; _l < _len3; _l++) {
+          i = horiIndex[_l];
+          _results.push(changeColor(tc.children[i]));
+        }
+        return _results;
+      }
     }
   };
 
@@ -287,5 +423,9 @@
   };
 
   drawGame(0);
+
+  document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + 5);
+
+  document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 10);
 
 }).call(this);

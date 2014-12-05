@@ -3,7 +3,7 @@
 
   window.stage = new createjs.Stage("canvas");
 
-  stage.top = 5;
+  stage.y = 5;
 
   createjs.Ticker.addEventListener("tick", stage);
 

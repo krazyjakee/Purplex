@@ -1,3 +1,18 @@
+Array::unique = ->
+  u = {}
+  a = []
+  i = 0
+  l = @length
+
+  while i < l
+    if u.hasOwnProperty(this[i])
+      ++i
+      continue
+    a.push this[i]
+    u[this[i]] = 1
+    ++i
+  a
+
 Math.seed = 1
 Math.randomSeed = (max, min) ->
   max = max || 1
@@ -61,16 +76,23 @@ hoverIn = (tileId) ->
   point = utilities.numberToRotationCoord tileId
   others = (utilities.getRotation(i, point) for i in [4..1])
   for i in others
-    $(tc.children[i].children[0]).animate { x: -(game.tileWidth / 4), y: -(game.tileHeight / 4), scaleX: 1.5, scaleY: 1.5 }, 0, 250
+    $(tc.children[i].children[0]).animate { x: -(game.tileWidth / 4), y: -(game.tileHeight / 4), scaleX: 1.5, scaleY: 1.5 }, 0, 125
 
-  $(tc.children[tileId].children[0]).animate { x: -(game.tileWidth / 2), y: -(game.tileHeight / 2), scaleX: 2.0, scaleY: 2.0 }, 0, 250
+  $(tc.children[tileId].children[0]).animate { x: -(game.tileWidth / 2), y: -(game.tileHeight / 2), scaleX: 2.0, scaleY: 2.0 }, 0, 125
 
 hoverOut = (tileId) ->
   tc = $(game.tileContainer)[0]
   point = utilities.numberToRotationCoord tileId
   others = (utilities.getRotation(i, point) for i in [4..1])
   for i in others
-    $(tc.children[i].children[0]).animate { x: 0, y: 0, scaleX: 1, scaleY: 1 }, 0, 250
+    $(tc.children[i].children[0]).animate { x: 0, y: 0, scaleX: 1, scaleY: 1 }, 0, 125
+
+changeColor = (tile, newColor = false) ->
+  newColor = utilities.randomColor() unless newColor
+  $(tile.children[0]).animate { x: (game.tileWidth / 2), y: (game.tileHeight / 2), scaleX: 0, scaleY: 0 }, 0, 125, 'linear', ->
+    $.changeColor @, newColor, (game.tileWidth / 2), (game.tileHeight / 2)
+    $(@).animate { x: 0, y: 0, scaleX: 1, scaleY: 1 }, 0, 125, 'linear', ->
+      detectSameTiles tile.tileId
 
 swapAnimation = (source, destination, color = false) ->
   if color
@@ -87,19 +109,21 @@ swapAnimation = (source, destination, color = false) ->
     x: destination.x
     y: destination.y
 
-  $(source).animate { x: destination.x, y: destination.y }, 0, 250, 'linear', ->
+  $(source).animate { x: destination.x, y: destination.y }, 0, 125, 'linear', ->
     source.x = sourcePrevious.x
     source.y = sourcePrevious.y
     $.changeColor @children[0], color2, (game.tileWidth / 2), (game.tileHeight / 2)
 
-  $(destination).animate { x: source.x, y: source.y }, 0, 250, 'linear', ->
+  $(destination).animate { x: source.x, y: source.y }, 0, 125, 'linear', ->
     destination.x = destinationPrevious.x
     destination.y = destinationPrevious.y
     $.changeColor @children[0], color1, (game.tileWidth / 2), (game.tileHeight / 2)
 
   setTimeout ->
     hoverOut source.tileId
-  , 350
+    detectSameTiles source.tileId
+    detectSameTiles destination.tileId
+  , 150
 
 swap = (source, destination) ->
   point = utilities.numberToRotationCoord source.tileId
@@ -123,14 +147,65 @@ click = (e) ->
     for i in others
       if i is game.selectedTile
         swapped = true
-        swap game.tileContainer.children[game.selectedTile], e.currentTarget
-        hoverOut game.selectedTile
+        swap game.tileContainer.children[i], e.currentTarget
+        hoverOut i
     hoverIn game.selectedTile
     hoverOut game.selectedTile unless swapped
     game.selectedTile = false
   else
     hoverIn tileId
     game.selectedTile = e.currentTarget.tileId
+
+getHoriLine = (index) ->
+  i = index
+  i-- if (i - 1) % game.size
+  i-- while (i + 1) % game.size and i % (game.size + 1) and i % (game.size - 1)
+  left = i
+  i = index
+  i++ while i % (game.size + 1) and i % (game.size - 1) and (i + 1) % game.size
+  hori = []
+  while left < i
+    left++
+    hori.push(left) if left % (game.size + 1) and left % (game.size - 1)
+  hori
+
+getVertLine = (index) ->
+  i = index
+  i -= game.size while i % (game.size + 1) and i % (game.size - 1) and i > (game.size - 1)
+  top = i
+  top -= game.size if top < (game.size * 2)
+  i = index
+  i += game.size while i % (game.size + 1) and i % (game.size - 1) and i < (game.size * (game.size - 1))
+  vert = []
+  while top < i
+    top += game.size
+    vert.push(top) if top % (game.size + 1) and top % (game.size - 1)
+  vert
+
+detectSameTiles = (tileId) ->
+  console.log "Started detection"
+  vert = []
+  hori = []
+  tc = $(game.tileContainer)[0]
+  vertIndex = getVertLine tileId
+  horiIndex = getHoriLine tileId
+  for v in vertIndex
+    v = tc.children[v].children[0].color # get colors
+    vert.push v if v
+  for h in horiIndex
+    h = tc.children[h].children[0].color
+    hori.push h if h
+
+  console.log hori.unique()
+
+  if vertIndex.length > 1
+    if vert.unique().length is 1
+      changeColor(tc.children[i]) for i in vertIndex
+      #@score.add vertIndex.length * 10
+  if horiIndex.length > 1
+    if hori.unique().length is 1
+      changeColor(tc.children[i]) for i in horiIndex
+      #@score.add horiIndex.length * 10
 
 drawGame = (gameNumber) ->
   Math.seed = gameNumber
@@ -161,8 +236,6 @@ drawGame = (gameNumber) ->
         color: utilities.randomColor()
 
       tile.addChild circle, filler
-      #tile.addEventListener 'rollover', hoverIn
-      #tile.addEventListener 'rollout', hoverOut
       tile.addEventListener 'click', click
 
     else
@@ -174,3 +247,5 @@ drawGame = (gameNumber) ->
       $(tile.children[0]).animate { x: 0, y: 0, scaleX: 1.0, scaleY: 1.0 }, index * 10, 1000
 
 drawGame(0)
+document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + 5)
+document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 10)
