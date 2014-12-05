@@ -29,7 +29,7 @@ class jakeQuery
       recursiveIterator stage, elem # start looking for it
     else
       if elem.length
-        @[i] = elem for elem, i in elem
+        @[i] = e for e, i in elem
       else
         @[0] = elem # or set the instance element
     
@@ -38,8 +38,7 @@ class jakeQuery
   
   newShape: (obj) ->
     shape = new createjs.Shape()
-    shape.name = obj.name if obj.name
-    shape.type = obj.type if obj.type
+    shape = $.extend shape, obj
     return shape
 
   create:
@@ -56,7 +55,7 @@ class jakeQuery
       container = new createjs.Container()
       container.name = name
       stage.addChild container
-      return $(name)
+      return container
 
     circle: (obj) -> # name = false, color = transparent, x = 0, y = 0, radius = 0
       obj = $.extend @defaultShape, obj
@@ -71,5 +70,29 @@ class jakeQuery
       shape = @that.newShape obj
       shape.graphics.beginFill(obj.color).drawRect obj.x, obj.y, obj.width, obj.height
       return shape
+
+  iterate: (callback) ->
+    i = 0
+    while elem = @[i++]
+      callback(elem)
+
+  addChild: (child) ->
+    @iterate (elem) ->
+      elem.addChild(child)
+
+  changeColor: (shape, color) ->
+    switch shape.type
+      when "circle" then shape.graphics.clear().beginFill(color).drawCircle 0, 0, shape.radius
+
+  animate: (properties, delay = 0, duration = 0, easing = 'linear', complete = false) ->
+    unless complete
+      complete = -> false
+    ease = createjs.Ease[easing] # http://www.createjs.com/Docs/TweenJS/classes/Ease.html
+    @iterate (elem) ->
+      createjs.Tween.removeTweens elem
+      createjs.Tween.get elem
+        .wait delay
+        .to properties, duration, ease
+        .call complete
 
 $.extend $, new jakeQuery(stage)

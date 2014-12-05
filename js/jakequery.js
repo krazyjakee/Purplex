@@ -27,7 +27,7 @@
 
   jakeQuery = (function() {
     function jakeQuery(elem) {
-      var i, length, recursiveIterator, _i, _len;
+      var e, i, length, recursiveIterator, _i, _len;
       if (elem.canvas) {
         return this;
       }
@@ -63,8 +63,8 @@
       } else {
         if (elem.length) {
           for (i = _i = 0, _len = elem.length; _i < _len; i = ++_i) {
-            elem = elem[i];
-            this[i] = elem;
+            e = elem[i];
+            this[i] = e;
           }
         } else {
           this[0] = elem;
@@ -77,12 +77,7 @@
     jakeQuery.prototype.newShape = function(obj) {
       var shape;
       shape = new createjs.Shape();
-      if (obj.name) {
-        shape.name = obj.name;
-      }
-      if (obj.type) {
-        shape.type = obj.type;
-      }
+      shape = $.extend(shape, obj);
       return shape;
     };
 
@@ -101,7 +96,7 @@
         container = new createjs.Container();
         container.name = name;
         stage.addChild(container);
-        return $(name);
+        return container;
       },
       circle: function(obj) {
         var shape;
@@ -119,6 +114,55 @@
         shape.graphics.beginFill(obj.color).drawRect(obj.x, obj.y, obj.width, obj.height);
         return shape;
       }
+    };
+
+    jakeQuery.prototype.iterate = function(callback) {
+      var elem, i, _results;
+      i = 0;
+      _results = [];
+      while (elem = this[i++]) {
+        _results.push(callback(elem));
+      }
+      return _results;
+    };
+
+    jakeQuery.prototype.addChild = function(child) {
+      return this.iterate(function(elem) {
+        return elem.addChild(child);
+      });
+    };
+
+    jakeQuery.prototype.changeColor = function(shape, color) {
+      switch (shape.type) {
+        case "circle":
+          return shape.graphics.clear().beginFill(color).drawCircle(0, 0, shape.radius);
+      }
+    };
+
+    jakeQuery.prototype.animate = function(properties, delay, duration, easing, complete) {
+      var ease;
+      if (delay == null) {
+        delay = 0;
+      }
+      if (duration == null) {
+        duration = 0;
+      }
+      if (easing == null) {
+        easing = 'linear';
+      }
+      if (complete == null) {
+        complete = false;
+      }
+      if (!complete) {
+        complete = function() {
+          return false;
+        };
+      }
+      ease = createjs.Ease[easing];
+      return this.iterate(function(elem) {
+        createjs.Tween.removeTweens(elem);
+        return createjs.Tween.get(elem).wait(delay).to(properties, duration, ease).call(complete);
+      });
     };
 
     return jakeQuery;
