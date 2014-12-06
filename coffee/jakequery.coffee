@@ -13,6 +13,7 @@ $.extend = (obj, mixin) ->
 class jakeQuery
 
   constructor: (elem) ->
+    @create.that = @
     return @ if elem.canvas # if it's a stage object, just return a blank instance
 
     # function to loop through the stage objects children
@@ -33,7 +34,6 @@ class jakeQuery
       else
         @[0] = elem # or set the instance element
     
-    @create.that = @
     return @ # return the instance
   
   newShape: (obj) ->

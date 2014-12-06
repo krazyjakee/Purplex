@@ -21,16 +21,13 @@ Math.randomSeed = (max, min) ->
   rnd = Math.seed / 233280
   Math.floor(min + rnd * (max - min)) - 1
 
-game =
+window.game =
   enabled: false
   level: 1
-  size: 9
+  size: 7
   tileWidth: 50
   tileHeight: 35
   selectedTile: false
-  selectedContainer: $.create.container 'selectedContainer'
-  followersContainer: $.create.container 'followersContainer'
-  tileContainer: $.create.container 'tileContainer'
   grayscale: new createjs.ColorMatrixFilter([
     0.30,0.30,0.30,0,0,
     0.30,0.30,0.30,0,0,
@@ -183,7 +180,6 @@ getVertLine = (index) ->
   vert
 
 detectSameTiles = (tileId) ->
-  console.log "Started detection"
   vert = []
   hori = []
   tc = $(game.tileContainer)[0]
@@ -196,8 +192,6 @@ detectSameTiles = (tileId) ->
     h = tc.children[h].children[0].color
     hori.push h if h
 
-  console.log hori.unique()
-
   if vertIndex.length > 1
     if vert.unique().length is 1
       changeColor(tc.children[i]) for i in vertIndex
@@ -207,8 +201,11 @@ detectSameTiles = (tileId) ->
       changeColor(tc.children[i]) for i in horiIndex
       #@score.add horiIndex.length * 10
 
-drawGame = (gameNumber) ->
-  Math.seed = gameNumber
+drawGame = ->
+  stage.removeAllChildren()
+  game.selectedContainer = $.create.container 'selectedContainer'
+  game.followersContainer = $.create.container 'followersContainer'
+  game.tileContainer = $.create.container 'tileContainer'
   tc = $(game.tileContainer)
   for i in [0...(game.size * game.size)]
     if i % (game.size + 1) and i % (game.size - 1)
@@ -246,6 +243,34 @@ drawGame = (gameNumber) ->
     if tile.children
       $(tile.children[0]).animate { x: 0, y: 0, scaleX: 1.0, scaleY: 1.0 }, index * 10, 1000
 
-drawGame(0)
+drawButton = (obj) ->
+  buttonContainer = new createjs.Container()
+  button = new createjs.Shape()
+  text = new createjs.Text(obj.text, "#{obj.textSize} Arial", obj.textColor)
+  buttonContainer.x = obj.x
+  buttonContainer.y = obj.y
+  text.x = obj.textX
+  text.y = obj.textY
+  text.textAlign = obj.textAlign if obj.textAlign
+  button.graphics.beginFill(obj.color).drawRect 0, 0, obj.width, obj.height
+  button.addEventListener('click', obj.click) if obj.click
+  buttonContainer.addChild button, text
+  return {
+    container: buttonContainer
+    text: text
+    button: button
+  }
+
+menu = {}
+drawMenu = ->
+  stage.removeAllChildren()
+  menu.levelLabel = drawButton menuObj.levelLabel
+  menu.plusBtn = drawButton menuObj.plusBtn
+  menu.minusBtn = drawButton menuObj.minusBtn
+  menu.startBtn = drawButton menuObj.startBtn
+  stage.addChild menu.levelLabel.container, menu.plusBtn.container, menu.minusBtn.container, menu.startBtn.container
+
+window.onload = drawMenu
+
 document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + 5)
 document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 10)

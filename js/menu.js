@@ -1,17 +1,18 @@
-var menu, menuObj;
+var menuObj;
 
 menuObj = {
   plusBtn: {
-    x: 7 * game.tileWidth,
-    y: 5 * game.tileHeight,
+    name: 'plusBtn',
+    x: (Math.floor(game.size / 2) + 1) * game.tileWidth,
+    y: (Math.floor(game.size / 2) - 1) * game.tileHeight,
     width: game.tileWidth,
     height: game.tileHeight,
-    backgroundColor: 'purple',
+    color: 'purple',
     text: "+",
     textSize: "40px",
     textX: game.tileWidth / 2 - 12,
     textY: game.tileHeight / 2 - 22,
-    color: 'white',
+    textColor: 'white',
     click: function() {
       if (Math.seed < 99) {
         Math.seed++;
@@ -21,16 +22,17 @@ menuObj = {
     }
   },
   minusBtn: {
-    x: 5 * game.tileWidth,
-    y: 5 * game.tileHeight,
+    name: 'minusBtn',
+    x: (Math.floor(game.size / 2) - 1) * game.tileWidth,
+    y: (Math.floor(game.size / 2) - 1) * game.tileHeight,
     width: game.tileWidth,
     height: game.tileHeight,
-    backgroundColor: 'purple',
+    color: 'purple',
     text: "-",
     textSize: "40px",
     textX: game.tileWidth / 2 - 8,
     textY: game.tileHeight / 2 - 24,
-    color: 'white',
+    textColor: 'white',
     click: function() {
       if (Math.seed > 1) {
         Math.seed--;
@@ -40,35 +42,32 @@ menuObj = {
     }
   },
   levelLabel: {
-    x: 6 * game.tileWidth,
-    y: 5 * game.tileHeight,
+    x: Math.floor(game.size / 2) * game.tileWidth,
+    y: (Math.floor(game.size / 2) - 1) * game.tileHeight,
     width: game.tileWidth,
     height: game.tileHeight,
-    backgroundColor: 'white',
+    color: 'white',
     text: Math.seed,
     textSize: "24px",
     textAlign: "center",
     textX: game.tileWidth / 2,
     textY: game.tileHeight / 2 - 15,
-    color: 'black'
+    textColor: 'black'
   },
   startBtn: {
-    x: 5 * game.tileWidth,
-    y: 7 * game.tileHeight,
+    name: 'startBtn',
+    x: (Math.floor(game.size / 2) - 1) * game.tileWidth,
+    y: (Math.floor(game.size / 2) + 1) * game.tileHeight,
     width: game.tileWidth * 3,
     height: game.tileHeight,
-    backgroundColor: 'purple',
+    color: 'purple',
     text: "Start Game",
     textSize: "24px",
     textX: game.tileWidth / 2 - 12,
     textY: game.tileHeight / 2 - 15,
-    color: 'white',
+    textColor: 'white',
     click: function() {
-      draw.newGame(Math.seed);
-      stage.addChild(game.tileContainer);
-      return draw.beginScale();
+      return drawGame(Math.seed);
     }
   }
 };
-
-menu = {};
