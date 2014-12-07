@@ -1,5 +1,6 @@
 window.stage = new createjs.Stage "canvas"
-stage.y = 5
+stage.y = 10
+stage.x = 10
 createjs.Ticker.addEventListener "tick", stage
 stage.enableMouseOver()
 
@@ -70,6 +71,24 @@ class jakeQuery
       shape = @that.newShape obj
       shape.graphics.beginFill(obj.color).drawRect obj.x, obj.y, obj.width, obj.height
       return shape
+
+    text: (obj) ->
+      obj = $.extend
+        color: 'black'
+        text: 'null'
+        size: '14px'
+        font: 'Arial'
+        align: 'left'
+        type: 'text'
+        x: 0
+        y: 0
+      , obj
+      text = new createjs.Text(obj.text, "#{obj.size} #{obj.font}", obj.color)
+      text.x = obj.x
+      text.y = obj.y
+      text.textAlign = obj.align
+      text.name = obj.name
+      return text
 
   iterate: (callback) ->
     i = 0

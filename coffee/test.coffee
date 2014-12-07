@@ -24,7 +24,7 @@ Math.randomSeed = (max, min) ->
 window.game =
   enabled: false
   level: 1
-  size: 7
+  size: 9
   tileWidth: 50
   tileHeight: 35
   selectedTile: false
@@ -129,29 +129,30 @@ swap = (source, destination) ->
   if p.length
     if source.children[0].color is destination.children[0].color and source.tileId != destination.tileId
       swapAnimation source, destination
-      # score.add 5
+      score.add 5
     else
       swapAnimation source, destination, true
   else
     game.selectedTile = tileId
 
 click = (e) ->
-  tileId = e.currentTarget.tileId
-  if game.selectedTile
-    point = utilities.numberToRotationCoord tileId
-    others = (utilities.getRotation(i, point) for i in [4..1])
-    swapped = false
-    for i in others
-      if i is game.selectedTile
-        swapped = true
-        swap game.tileContainer.children[i], e.currentTarget
-        hoverOut i
-    hoverIn game.selectedTile
-    hoverOut game.selectedTile unless swapped
-    game.selectedTile = false
-  else
-    hoverIn tileId
-    game.selectedTile = e.currentTarget.tileId
+  if game.enabled
+    tileId = e.currentTarget.tileId
+    if game.selectedTile
+      point = utilities.numberToRotationCoord tileId
+      others = (utilities.getRotation(i, point) for i in [4..1])
+      swapped = false
+      for i in others
+        if i is game.selectedTile
+          swapped = true
+          swap game.tileContainer.children[i], e.currentTarget
+          hoverOut i
+      hoverIn game.selectedTile
+      hoverOut game.selectedTile unless swapped
+      game.selectedTile = false
+    else
+      hoverIn tileId
+      game.selectedTile = e.currentTarget.tileId
 
 getHoriLine = (index) ->
   i = index
@@ -195,14 +196,172 @@ detectSameTiles = (tileId) ->
   if vertIndex.length > 1
     if vert.unique().length is 1
       changeColor(tc.children[i]) for i in vertIndex
-      #@score.add vertIndex.length * 10
+      score.add vertIndex.length * 10
   if horiIndex.length > 1
     if hori.unique().length is 1
       changeColor(tc.children[i]) for i in horiIndex
-      #@score.add horiIndex.length * 10
+      score.add horiIndex.length * 10
+
+score =
+  current: 0
+  add: (input) ->
+    score.current = score.current + input
+    $('score')[0].text = "Score: " + score.current
+    addedTime = Math.round score.current / 500
+    newTime = timer.current + addedTime
+    if newTime > timer.total then timer.current = timer.total else timer.current = newTime
+  setBest: ->
+    window.localStorage['best'+game.level] = 0 unless window.localStorage['best'+game.level]?
+    window.localStorage['last'+game.level] = 0 unless window.localStorage['last'+game.level]?
+    $('last-score')[0].text = "Last: " + window.localStorage['last'+game.level]
+    $('best-score')[0].text = "Best: " + window.localStorage['best'+game.level]
+
+timer =
+  timer: false
+  current: false
+  total: (1 * 60)
+  start: ->
+    game.enabled = true
+    timer.current = timer.total
+    game.tileContainer.filters = []
+
+    wc = $('white-cover')
+    timer.timer = setInterval ->
+      timer.current -= 1
+      timer.stop() unless timer.current
+      minutes = Math.floor(timer.current / 60)
+      minutes = ('0' + minutes).slice(-2)
+      seconds = timer.current - (60 * minutes)
+      seconds = ('0' + seconds).slice(-2)
+      $('timer')[0].text = "#{minutes}:#{seconds}"
+
+      percTime = (timer.current / timer.total) * 100
+      percPixels = ((game.size * game.tileHeight) / 100) * (100 - percTime)
+      wc.animate { y: -percPixels }, 0, 1000
+    , 1000
+
+  stop: ->
+    clearInterval timer.timer
+    window.localStorage['last'+game.level] = score.current
+    window.localStorage['best'+game.level] = score.current if window.localStorage['best'+game.level] < score.current
+    score.setBest()
+    $('tileContainer')[0].filters = [game.grayscale]
+    game.tileContainer.cache 0, 0, (game.size * game.tileWidth), (game.size * game.tileHeight)
+    game.enabled = false
+
+drawScore = ->
+  stage.addChild $.create.text
+    name: "score"
+    text: "Score: 0"
+    size: "18px"
+    x: game.size * game.tileWidth + game.tileWidth / 4
+    y: 32
+
+  stage.addChild $.create.text
+    name: "last-score"
+    text: "Last: 0"
+    size: "18px"
+    x: game.size * game.tileWidth + game.tileWidth / 4
+    y: 54
+
+  stage.addChild $.create.text
+    name: "best-score"
+    text: "Best: 0"
+    size: "18px"
+    x: game.size * game.tileWidth + game.tileWidth / 4
+    y: 76
+
+drawTimer = ->
+  minutes = Math.floor(timer.total / 60)
+  seconds = timer.total - (60 * minutes)
+  minutes = ('0' + minutes).slice(-2)
+  seconds = ('0' + seconds).slice(-2)
+  text = "#{minutes}:#{seconds}"
+
+  stage.addChild $.create.text
+    name: "timer"
+    text: text
+    size: "24px"
+    x: game.size * game.tileWidth + game.tileWidth / 4
+    y: 5
+
+drawPurpleX = (full = false) ->
+
+  height = game.size * game.tileHeight
+  stage.addChild $.create.rectangle
+    name: 'purplex'
+    x: 0
+    y: 0
+    width: game.size * game.tileWidth
+    height: height
+    color: 'purple'
+
+  if full then y = -height else 0
+  stage.addChild $.create.rectangle
+    name: 'white-cover'
+    x: 0
+    y: y
+    width: game.size * game.tileWidth
+    height: height
+    color: 'white'
+
+drawTriangles = ->
+  triangle1 = new createjs.Shape()
+  triangle2 = new createjs.Shape()
+  triangle3 = new createjs.Shape()
+  triangle4 = new createjs.Shape()
+
+  triangle1.graphics.beginFill("white")
+  triangle2.graphics.beginFill("white")
+  triangle3.graphics.beginFill("white")
+  triangle4.graphics.beginFill("white")
+
+  s = game.size
+  s2 = (game.size / 2)
+  sf2 = Math.floor(game.size / 2)
+  sr2 = Math.round(game.size / 2)
+  tw = game.tileWidth
+  tw2 = game.tileWidth / 4
+  th = game.tileHeight
+  th2 = game.tileHeight / 4
+
+  # left
+  triangle1.graphics.moveTo 0, th2
+  .lineTo (sf2 * tw) + tw2, s2 * th
+  .lineTo 0, (s * th) - th2
+  .lineTo 0, th2
+
+  # up
+  triangle2.graphics.moveTo tw2, 0
+  .lineTo s2 * tw, (sf2 * th) + th2
+  .lineTo (s * tw) - tw2, 0 
+  .lineTo tw2, 0
+
+  # right
+  triangle3.graphics.moveTo s * tw, th2
+  .lineTo (sr2 * tw) - tw2, s2 * th
+  .lineTo s * tw, (s * th) - th2
+  .lineTo s * tw, th2
+
+  # down
+  triangle4.graphics.moveTo 0, (s * th) + th2 
+  .lineTo s2 * tw, (sr2 * th) - th2
+  .lineTo (s * tw), (s * th) + th2
+  .lineTo 0, (s * th) + th2 
+
+  stage.addChild triangle1, triangle2, triangle3, triangle4
 
 drawGame = ->
   stage.removeAllChildren()
+  drawPurpleX()
+  drawTriangles()
+  drawTimer()
+  drawScore()
+  score.setBest()
+  setTimeout ->
+    timer.start()
+  , 1000
+  
   game.selectedContainer = $.create.container 'selectedContainer'
   game.followersContainer = $.create.container 'followersContainer'
   game.tileContainer = $.create.container 'tileContainer'
@@ -247,30 +406,32 @@ drawButton = (obj) ->
   buttonContainer = new createjs.Container()
   button = new createjs.Shape()
   text = new createjs.Text(obj.text, "#{obj.textSize} Arial", obj.textColor)
+  text = $.create.text
+    name: obj.name
+    text: obj.text
+    size: obj.textSize
+    align: obj.textAlign
+    x: obj.textX
+    y: obj.textY
+    color: obj.textColor
+
   buttonContainer.x = obj.x
   buttonContainer.y = obj.y
-  text.x = obj.textX
-  text.y = obj.textY
-  text.textAlign = obj.textAlign if obj.textAlign
   button.graphics.beginFill(obj.color).drawRect 0, 0, obj.width, obj.height
   button.addEventListener('click', obj.click) if obj.click
   buttonContainer.addChild button, text
-  return {
-    container: buttonContainer
-    text: text
-    button: button
-  }
+  return buttonContainer
 
-menu = {}
 drawMenu = ->
   stage.removeAllChildren()
-  menu.levelLabel = drawButton menuObj.levelLabel
-  menu.plusBtn = drawButton menuObj.plusBtn
-  menu.minusBtn = drawButton menuObj.minusBtn
-  menu.startBtn = drawButton menuObj.startBtn
-  stage.addChild menu.levelLabel.container, menu.plusBtn.container, menu.minusBtn.container, menu.startBtn.container
+  drawPurpleX(true)
+  drawTriangles()
+  drawTimer()
+  drawScore()
+  score.setBest()
 
+  stage.addChild(drawButton(menuObj[k])) for k of menuObj
 window.onload = drawMenu
 
-document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + 5)
-document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 10)
+document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3))
+document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 20)

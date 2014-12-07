@@ -191,6 +191,7 @@ draw =
     text.x = obj.textX
     text.y = obj.textY
     text.textAlign = obj.textAlign if obj.textAlign
+    text.name = obj.name
     button.graphics.beginFill(obj.backgroundColor).drawRect 0, 0, obj.width, obj.height
     button.addEventListener('click', obj.click) if obj.click
     buttonContainer.addChild button, text

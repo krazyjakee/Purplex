@@ -1,4 +1,4 @@
-var changeColor, click, detectSameTiles, drawButton, drawGame, drawMenu, getHoriLine, getVertLine, hoverIn, hoverOut, menu, swap, swapAnimation, utilities;
+var changeColor, click, detectSameTiles, drawButton, drawGame, drawMenu, drawPurpleX, drawScore, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, score, swap, swapAnimation, timer, utilities;
 
 Array.prototype.unique = function() {
   var a, i, l, u;
@@ -32,7 +32,7 @@ Math.randomSeed = function(max, min) {
 window.game = {
   enabled: false,
   level: 1,
-  size: 7,
+  size: 9,
   tileWidth: 50,
   tileHeight: 35,
   selectedTile: false,
@@ -232,7 +232,8 @@ swap = function(source, destination) {
   })();
   if (p.length) {
     if (source.children[0].color === destination.children[0].color && source.tileId !== destination.tileId) {
-      return swapAnimation(source, destination);
+      swapAnimation(source, destination);
+      return score.add(5);
     } else {
       return swapAnimation(source, destination, true);
     }
@@ -243,34 +244,36 @@ swap = function(source, destination) {
 
 click = function(e) {
   var i, others, point, swapped, tileId, _i, _len;
-  tileId = e.currentTarget.tileId;
-  if (game.selectedTile) {
-    point = utilities.numberToRotationCoord(tileId);
-    others = (function() {
-      var _i, _results;
-      _results = [];
-      for (i = _i = 4; _i >= 1; i = --_i) {
-        _results.push(utilities.getRotation(i, point));
+  if (game.enabled) {
+    tileId = e.currentTarget.tileId;
+    if (game.selectedTile) {
+      point = utilities.numberToRotationCoord(tileId);
+      others = (function() {
+        var _i, _results;
+        _results = [];
+        for (i = _i = 4; _i >= 1; i = --_i) {
+          _results.push(utilities.getRotation(i, point));
+        }
+        return _results;
+      })();
+      swapped = false;
+      for (_i = 0, _len = others.length; _i < _len; _i++) {
+        i = others[_i];
+        if (i === game.selectedTile) {
+          swapped = true;
+          swap(game.tileContainer.children[i], e.currentTarget);
+          hoverOut(i);
+        }
       }
-      return _results;
-    })();
-    swapped = false;
-    for (_i = 0, _len = others.length; _i < _len; _i++) {
-      i = others[_i];
-      if (i === game.selectedTile) {
-        swapped = true;
-        swap(game.tileContainer.children[i], e.currentTarget);
-        hoverOut(i);
+      hoverIn(game.selectedTile);
+      if (!swapped) {
+        hoverOut(game.selectedTile);
       }
+      return game.selectedTile = false;
+    } else {
+      hoverIn(tileId);
+      return game.selectedTile = e.currentTarget.tileId;
     }
-    hoverIn(game.selectedTile);
-    if (!swapped) {
-      hoverOut(game.selectedTile);
-    }
-    return game.selectedTile = false;
-  } else {
-    hoverIn(tileId);
-    return game.selectedTile = e.currentTarget.tileId;
   }
 };
 
@@ -323,7 +326,7 @@ getVertLine = function(index) {
 };
 
 detectSameTiles = function(tileId) {
-  var h, hori, horiIndex, i, tc, v, vert, vertIndex, _i, _j, _k, _l, _len, _len1, _len2, _len3, _results;
+  var h, hori, horiIndex, i, tc, v, vert, vertIndex, _i, _j, _k, _l, _len, _len1, _len2, _len3;
   vert = [];
   hori = [];
   tc = $(game.tileContainer)[0];
@@ -349,23 +352,192 @@ detectSameTiles = function(tileId) {
         i = vertIndex[_k];
         changeColor(tc.children[i]);
       }
+      score.add(vertIndex.length * 10);
     }
   }
   if (horiIndex.length > 1) {
     if (hori.unique().length === 1) {
-      _results = [];
       for (_l = 0, _len3 = horiIndex.length; _l < _len3; _l++) {
         i = horiIndex[_l];
-        _results.push(changeColor(tc.children[i]));
+        changeColor(tc.children[i]);
       }
-      return _results;
+      return score.add(horiIndex.length * 10);
     }
   }
+};
+
+score = {
+  current: 0,
+  add: function(input) {
+    var addedTime, newTime;
+    score.current = score.current + input;
+    $('score')[0].text = "Score: " + score.current;
+    addedTime = Math.round(score.current / 500);
+    newTime = timer.current + addedTime;
+    if (newTime > timer.total) {
+      return timer.current = timer.total;
+    } else {
+      return timer.current = newTime;
+    }
+  },
+  setBest: function() {
+    if (window.localStorage['best' + game.level] == null) {
+      window.localStorage['best' + game.level] = 0;
+    }
+    if (window.localStorage['last' + game.level] == null) {
+      window.localStorage['last' + game.level] = 0;
+    }
+    $('last-score')[0].text = "Last: " + window.localStorage['last' + game.level];
+    return $('best-score')[0].text = "Best: " + window.localStorage['best' + game.level];
+  }
+};
+
+timer = {
+  timer: false,
+  current: false,
+  total: 1 * 60,
+  start: function() {
+    var wc;
+    game.enabled = true;
+    timer.current = timer.total;
+    game.tileContainer.filters = [];
+    wc = $('white-cover');
+    return timer.timer = setInterval(function() {
+      var minutes, percPixels, percTime, seconds;
+      timer.current -= 1;
+      if (!timer.current) {
+        timer.stop();
+      }
+      minutes = Math.floor(timer.current / 60);
+      minutes = ('0' + minutes).slice(-2);
+      seconds = timer.current - (60 * minutes);
+      seconds = ('0' + seconds).slice(-2);
+      $('timer')[0].text = "" + minutes + ":" + seconds;
+      percTime = (timer.current / timer.total) * 100;
+      percPixels = ((game.size * game.tileHeight) / 100) * (100 - percTime);
+      return wc.animate({
+        y: -percPixels
+      }, 0, 1000);
+    }, 1000);
+  },
+  stop: function() {
+    clearInterval(timer.timer);
+    window.localStorage['last' + game.level] = score.current;
+    if (window.localStorage['best' + game.level] < score.current) {
+      window.localStorage['best' + game.level] = score.current;
+    }
+    score.setBest();
+    $('tileContainer')[0].filters = [game.grayscale];
+    game.tileContainer.cache(0, 0, game.size * game.tileWidth, game.size * game.tileHeight);
+    return game.enabled = false;
+  }
+};
+
+drawScore = function() {
+  stage.addChild($.create.text({
+    name: "score",
+    text: "Score: 0",
+    size: "18px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 32
+  }));
+  stage.addChild($.create.text({
+    name: "last-score",
+    text: "Last: 0",
+    size: "18px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 54
+  }));
+  return stage.addChild($.create.text({
+    name: "best-score",
+    text: "Best: 0",
+    size: "18px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 76
+  }));
+};
+
+drawTimer = function() {
+  var minutes, seconds, text;
+  minutes = Math.floor(timer.total / 60);
+  seconds = timer.total - (60 * minutes);
+  minutes = ('0' + minutes).slice(-2);
+  seconds = ('0' + seconds).slice(-2);
+  text = "" + minutes + ":" + seconds;
+  return stage.addChild($.create.text({
+    name: "timer",
+    text: text,
+    size: "24px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 5
+  }));
+};
+
+drawPurpleX = function(full) {
+  var height, y;
+  if (full == null) {
+    full = false;
+  }
+  height = game.size * game.tileHeight;
+  stage.addChild($.create.rectangle({
+    name: 'purplex',
+    x: 0,
+    y: 0,
+    width: game.size * game.tileWidth,
+    height: height,
+    color: 'purple'
+  }));
+  if (full) {
+    y = -height;
+  } else {
+    0;
+  }
+  return stage.addChild($.create.rectangle({
+    name: 'white-cover',
+    x: 0,
+    y: y,
+    width: game.size * game.tileWidth,
+    height: height,
+    color: 'white'
+  }));
+};
+
+drawTriangles = function() {
+  var s, s2, sf2, sr2, th, th2, triangle1, triangle2, triangle3, triangle4, tw, tw2;
+  triangle1 = new createjs.Shape();
+  triangle2 = new createjs.Shape();
+  triangle3 = new createjs.Shape();
+  triangle4 = new createjs.Shape();
+  triangle1.graphics.beginFill("white");
+  triangle2.graphics.beginFill("white");
+  triangle3.graphics.beginFill("white");
+  triangle4.graphics.beginFill("white");
+  s = game.size;
+  s2 = game.size / 2;
+  sf2 = Math.floor(game.size / 2);
+  sr2 = Math.round(game.size / 2);
+  tw = game.tileWidth;
+  tw2 = game.tileWidth / 4;
+  th = game.tileHeight;
+  th2 = game.tileHeight / 4;
+  triangle1.graphics.moveTo(0, th2).lineTo((sf2 * tw) + tw2, s2 * th).lineTo(0, (s * th) - th2).lineTo(0, th2);
+  triangle2.graphics.moveTo(tw2, 0).lineTo(s2 * tw, (sf2 * th) + th2).lineTo((s * tw) - tw2, 0).lineTo(tw2, 0);
+  triangle3.graphics.moveTo(s * tw, th2).lineTo((sr2 * tw) - tw2, s2 * th).lineTo(s * tw, (s * th) - th2).lineTo(s * tw, th2);
+  triangle4.graphics.moveTo(0, (s * th) + th2).lineTo(s2 * tw, (sr2 * th) - th2).lineTo(s * tw, (s * th) + th2).lineTo(0, (s * th) + th2);
+  return stage.addChild(triangle1, triangle2, triangle3, triangle4);
 };
 
 drawGame = function() {
   var circle, coord, filler, i, index, tc, tile, _i, _j, _len, _ref, _ref1, _results;
   stage.removeAllChildren();
+  drawPurpleX();
+  drawTriangles();
+  drawTimer();
+  drawScore();
+  score.setBest();
+  setTimeout(function() {
+    return timer.start();
+  }, 1000);
   game.selectedContainer = $.create.container('selectedContainer');
   game.followersContainer = $.create.container('followersContainer');
   game.tileContainer = $.create.container('tileContainer');
@@ -424,38 +596,42 @@ drawButton = function(obj) {
   buttonContainer = new createjs.Container();
   button = new createjs.Shape();
   text = new createjs.Text(obj.text, "" + obj.textSize + " Arial", obj.textColor);
+  text = $.create.text({
+    name: obj.name,
+    text: obj.text,
+    size: obj.textSize,
+    align: obj.textAlign,
+    x: obj.textX,
+    y: obj.textY,
+    color: obj.textColor
+  });
   buttonContainer.x = obj.x;
   buttonContainer.y = obj.y;
-  text.x = obj.textX;
-  text.y = obj.textY;
-  if (obj.textAlign) {
-    text.textAlign = obj.textAlign;
-  }
   button.graphics.beginFill(obj.color).drawRect(0, 0, obj.width, obj.height);
   if (obj.click) {
     button.addEventListener('click', obj.click);
   }
   buttonContainer.addChild(button, text);
-  return {
-    container: buttonContainer,
-    text: text,
-    button: button
-  };
+  return buttonContainer;
 };
 
-menu = {};
-
 drawMenu = function() {
+  var k, _results;
   stage.removeAllChildren();
-  menu.levelLabel = drawButton(menuObj.levelLabel);
-  menu.plusBtn = drawButton(menuObj.plusBtn);
-  menu.minusBtn = drawButton(menuObj.minusBtn);
-  menu.startBtn = drawButton(menuObj.startBtn);
-  return stage.addChild(menu.levelLabel.container, menu.plusBtn.container, menu.minusBtn.container, menu.startBtn.container);
+  drawPurpleX(true);
+  drawTriangles();
+  drawTimer();
+  drawScore();
+  score.setBest();
+  _results = [];
+  for (k in menuObj) {
+    _results.push(stage.addChild(drawButton(menuObj[k])));
+  }
+  return _results;
 };
 
 window.onload = drawMenu;
 
-document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + 5);
+document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3));
 
-document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 10);
+document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 20);

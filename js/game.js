@@ -271,6 +271,7 @@ draw = {
     if (obj.textAlign) {
       text.textAlign = obj.textAlign;
     }
+    text.name = obj.name;
     button.graphics.beginFill(obj.backgroundColor).drawRect(0, 0, obj.width, obj.height);
     if (obj.click) {
       button.addEventListener('click', obj.click);
