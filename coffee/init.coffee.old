@@ -1,2 +1,0 @@
-$(window).load ->
-  window.game = new Game()

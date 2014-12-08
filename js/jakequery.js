@@ -160,7 +160,7 @@ jakeQuery = (function() {
     return shape.color = color;
   };
 
-  jakeQuery.prototype.animate = function(properties, delay, duration, easing, complete) {
+  jakeQuery.prototype.animate = function(properties, delay, duration, easing, complete, repeat) {
     var ease;
     if (delay == null) {
       delay = 0;
@@ -174,6 +174,9 @@ jakeQuery = (function() {
     if (complete == null) {
       complete = false;
     }
+    if (repeat == null) {
+      repeat = false;
+    }
     if (!complete) {
       complete = function() {
         return false;
@@ -182,7 +185,9 @@ jakeQuery = (function() {
     ease = createjs.Ease[easing];
     return this.iterate(function(elem) {
       createjs.Tween.removeTweens(elem);
-      return createjs.Tween.get(elem).wait(delay).to(properties, duration, ease).call(complete);
+      return createjs.Tween.get(elem, {
+        loop: repeat
+      }).wait(delay).to(properties, duration, ease).call(complete);
     });
   };
 

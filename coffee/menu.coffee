@@ -1,4 +1,28 @@
 menuObj =
+  logo:
+    name: 'logo'
+    x: (Math.floor(game.size / 2) - 1) * game.tileWidth
+    y: 0
+    width: 3 * game.tileWidth
+    height: game.tileHeight
+    color: 'white'
+    text: "PurpleX"
+    textSize: "40px"
+    textX: 4
+    textY: 3
+    textColor: 'purple'
+  selectLevel:
+    name: 'selectLevel'
+    x: (Math.floor(game.size / 2) - 1) * game.tileWidth
+    y: 2 * game.tileHeight
+    width: 2 * game.tileWidth
+    height: game.tileHeight / 2
+    color: 'white'
+    text: "Select a level"
+    textSize: "18px"
+    textX: 20
+    textY: 3
+    textColor: 'purple'
   plusBtn:
     name: 'plusBtn'
     x: (Math.floor(game.size / 2) + 1) * game.tileWidth
@@ -42,7 +66,7 @@ menuObj =
     width: game.tileWidth
     height: game.tileHeight
     color: 'white'
-    text: Math.seed
+    text: 1
     textSize: "24px"
     textAlign: "center"
     textX: game.tileWidth / 2
@@ -69,3 +93,34 @@ menuObj =
     height: game.tileHeight
     color: 'white'
 
+endGameMenu =
+  retryButton:
+    name: 'retry-button'
+    x: game.tileWidth
+    y: Math.floor(game.size / 2) * game.tileHeight
+    width: 3 * game.tileWidth
+    height: game.tileHeight
+    color: 'purple'
+    text: 'Retry'
+    textColor: 'white'
+    textSize: "24px"
+    textX: game.tileWidth - 2
+    textY: 4
+    click: ->
+      Math.seed = game.level
+      drawGame()
+  exitButton:
+    name: 'exit-button'
+    x: Math.round(game.size / 2) * game.tileWidth
+    y: Math.floor(game.size / 2) * game.tileHeight
+    width: 3 * game.tileWidth
+    height: game.tileHeight
+    color: 'purple'
+    text: 'Exit'
+    textColor: 'white'
+    textSize: "24px"
+    textX: game.tileWidth + 2
+    textY: 4
+    click: ->
+      Math.seed = game.level
+      drawMenu()

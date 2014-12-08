@@ -104,13 +104,13 @@ class jakeQuery
       when "circle" then shape.graphics.clear().beginFill(color).drawCircle x, y, shape.radius
     shape.color = color
 
-  animate: (properties, delay = 0, duration = 0, easing = 'linear', complete = false) ->
+  animate: (properties, delay = 0, duration = 0, easing = 'linear', complete = false, repeat = false) ->
     unless complete
       complete = -> false
     ease = createjs.Ease[easing] # http://www.createjs.com/Docs/TweenJS/classes/Ease.html
     @iterate (elem) ->
       createjs.Tween.removeTweens elem
-      createjs.Tween.get elem
+      createjs.Tween.get elem, { loop: repeat }
         .wait delay
         .to properties, duration, ease
         .call complete

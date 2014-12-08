@@ -1,14 +1,22 @@
-var draw, game, purple, stage, utilities;
+var changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, score, swap, swapAnimation, timer, utilities;
 
-stage = new createjs.Stage("canvas");
-
-stage.top = 5;
-
-createjs.Ticker.addEventListener("tick", stage);
-
-stage.enableMouseOver();
-
-purple = "#9900CC";
+Array.prototype.unique = function() {
+  var a, i, l, u;
+  u = {};
+  a = [];
+  i = 0;
+  l = this.length;
+  while (i < l) {
+    if (u.hasOwnProperty(this[i])) {
+      ++i;
+      continue;
+    }
+    a.push(this[i]);
+    u[this[i]] = 1;
+    ++i;
+  }
+  return a;
+};
 
 Math.seed = 1;
 
@@ -21,276 +29,23 @@ Math.randomSeed = function(max, min) {
   return Math.floor(min + rnd * (max - min)) - 1;
 };
 
-game = {
+window.game = {
   enabled: false,
   level: 1,
+  size: 9,
   tileWidth: 50,
   tileHeight: 35,
   selectedTile: false,
-  selectedContainer: new createjs.Container(),
-  followersContainer: new createjs.Container(),
-  tileContainer: new createjs.Container(),
   grayscale: new createjs.ColorMatrixFilter([0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0, 0, 0, 1, 0]),
-  sepia: new createjs.ColorMatrixFilter([0.39, 0.77, 0.19, 0, 0, 0.35, 0.68, 0.17, 0, 0, 0.27, 0.53, 0.13, 0, 0, 0, 0, 0, 1, 0]),
-  tileClick: function(e) {
-    var c1, c2, color, i, index, others, p, point, post, pre, selected, tileId, _i, _len, _ref;
-    tileId = e.currentTarget.tileId;
-    if (tileId % 14 && tileId % 12) {
-      point = utilities.numberToRotationCoord(tileId);
-      others = (function() {
-        var _i, _results;
-        _results = [];
-        for (i = _i = 4; _i >= 1; i = --_i) {
-          _results.push(utilities.getRotation(i, point));
-        }
-        return _results;
-      })();
-      _ref = game.selectedContainer.children;
-      for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
-        selected = _ref[index];
-        point = utilities.numberToCoord(others[index]);
-        selected.tileId = others[index];
-        point.x *= game.tileWidth;
-        point.y *= game.tileHeight;
-        selected.x = point.x + (game.tileWidth / 2);
-        selected.y = point.y + (game.tileHeight / 2);
-        color = game.getTile(others[index]).color;
-        if (others[index] === tileId) {
-          color = '#666666';
-        }
-        selected.graphics.clear().beginFill(color).drawRect(0, 0, 20, 20);
-      }
-      if (game.selectedTile) {
-        point = utilities.numberToRotationCoord(game.selectedTile);
-        others = (function() {
-          var _j, _results;
-          _results = [];
-          for (i = _j = 4; _j >= 1; i = --_j) {
-            _results.push(utilities.getRotation(i, point));
-          }
-          return _results;
-        })();
-        p = (function() {
-          var _j, _len1, _results;
-          _results = [];
-          for (_j = 0, _len1 = others.length; _j < _len1; _j++) {
-            p = others[_j];
-            if (p === tileId) {
-              _results.push(p);
-            }
-          }
-          return _results;
-        })();
-        if (p.length) {
-          pre = game.getTile(game.selectedTile);
-          post = game.getTile(tileId);
-          if (pre.color === post.color && game.selectedTile !== tileId) {
-            game.setTile(tileId);
-            return game.setTile(game.selectedTile);
-          } else {
-            c1 = pre.color;
-            c2 = post.color;
-            game.setTile(tileId, c1);
-            return game.setTile(game.selectedTile, c2);
-          }
-        } else {
-          return game.selectedTile = tileId;
-        }
-      } else {
-        return game.selectedTile = tileId;
-      }
-    }
-  },
-  tileHover: function(e) {
-    var follower, i, index, others, point, tileId, _i, _len, _ref, _results;
-    tileId = e.currentTarget.tileId;
-    if (tileId % 14 && tileId % 12) {
-      point = utilities.numberToRotationCoord(tileId);
-      others = (function() {
-        var _i, _results;
-        _results = [];
-        for (i = _i = 4; _i >= 1; i = --_i) {
-          _results.push(utilities.getRotation(i, point));
-        }
-        return _results;
-      })();
-      _ref = game.followersContainer.children;
-      _results = [];
-      for (index = _i = 0, _len = _ref.length; _i < _len; index = ++_i) {
-        follower = _ref[index];
-        point = utilities.numberToCoord(others[index]);
-        point.x *= game.tileWidth;
-        point.y *= game.tileHeight;
-        createjs.Tween.removeTweens(follower);
-        _results.push(createjs.Tween.get(follower).to({
-          x: point.x + (game.tileWidth / 2),
-          y: point.y + (game.tileHeight / 2)
-        }, 200));
-      }
-      return _results;
-    }
-  },
-  getSelectedTile: function() {
-    return game.tileContainer.children[game.selectedTile];
-  },
-  getTile: function(tileId) {
-    return game.tileContainer.children[tileId];
-  },
-  setTile: function(tileId, color) {
-    var tile;
-    if (color == null) {
-      color = false;
-    }
-    if (!color) {
-      color = utilities.randomColor();
-    }
-    console.log("set " + tileId + " to " + color);
-    tile = game.tileContainer.children[tileId];
-    tile.children[1].graphics.clear().beginFill(color).drawCircle(game.tileWidth / 2, game.tileHeight / 2, 10);
-    return tile.color = color;
-  }
-};
-
-draw = {
-  tile: function(tileId, color) {
-    var coord, filler, shape, tile, x, y;
-    if (color == null) {
-      color = false;
-    }
-    coord = utilities.numberToCoord(tileId);
-    x = coord.x * game.tileWidth;
-    y = coord.y * game.tileHeight;
-    tile = new createjs.Container();
-    tile.x = x;
-    tile.y = y;
-    tile.width = game.tileWidth;
-    tile.height = game.tileHeight;
-    shape = new createjs.Shape();
-    if (tileId % 14 && tileId % 12) {
-      shape.graphics.beginFill(color).drawCircle(game.tileWidth / 2, game.tileHeight / 2, 10);
-      shape.scaleX = 0.0;
-      shape.scaleY = 0.0;
-      shape.x = game.tileWidth / 2;
-      shape.y = game.tileHeight / 2;
-    } else {
-      shape.graphics.beginFill("transparent").drawRect(0, 0, game.tileWidth, game.tileHeight);
-    }
-    filler = new createjs.Shape();
-    filler.graphics.beginFill('rgba(255,255,255,0.01)').drawRect(0, 0, game.tileWidth, game.tileHeight);
-    tile.tileId = tileId;
-    tile.color = color;
-    tile.addChild(shape, filler);
-    tile.addEventListener('click', game.tileClick);
-    tile.addEventListener('rollover', game.tileHover);
-    return game.tileContainer.addChild(tile);
-  },
-  newGame: function(gameId) {
-    var i, _i;
-    stage.removeAllChildren();
-    game.tileContainer = new createjs.Container();
-    Math.seed = gameId;
-    for (i = _i = 0; _i < 169; i = ++_i) {
-      draw.tile(i, utilities.randomColor());
-    }
-    draw.followers();
-    return draw.selected();
-  },
-  followers: function() {
-    var i, shape, _i;
-    for (i = _i = 0; _i < 4; i = ++_i) {
-      shape = new createjs.Shape();
-      shape.graphics.beginFill('#666666').drawCircle(0, 0, 12);
-      shape.x = (game.tileWidth * 6) + (game.tileWidth / 2);
-      shape.y = (game.tileHeight * 6) + (game.tileHeight / 2);
-      game.followersContainer.addChild(shape);
-    }
-    return stage.addChild(game.followersContainer);
-  },
-  selected: function() {
-    var i, shape, _i;
-    for (i = _i = 0; _i < 4; i = ++_i) {
-      shape = new createjs.Shape();
-      shape.graphics.beginFill('#666666').drawRect(0, 0, 20, 20);
-      shape.x = (game.tileWidth * 6) + (game.tileWidth / 2);
-      shape.y = (game.tileHeight * 6) + (game.tileHeight / 2);
-      shape.regX = 10;
-      shape.regY = 10;
-      createjs.Tween.get(shape, {
-        loop: true
-      }).to({
-        rotation: 360
-      }, 5000);
-      game.selectedContainer.addChild(shape);
-    }
-    return stage.addChild(game.selectedContainer);
-  },
-  beginScale: function() {
-    var tile, tileId, _i, _len, _ref, _results;
-    _ref = game.tileContainer.children;
-    _results = [];
-    for (tileId = _i = 0, _len = _ref.length; _i < _len; tileId = ++_i) {
-      tile = _ref[tileId];
-      if (tileId % 14 && tileId % 12) {
-        _results.push(createjs.Tween.get(tile.children[0]).wait(tileId * 5).to({
-          x: 0,
-          y: 0,
-          scaleX: 1.0,
-          scaleY: 1.0
-        }, 500));
-      }
-    }
-    return _results;
-  },
-  clear: function() {
-    var i, _i;
-    stage.removeAllChildren();
-    for (i = _i = 0; _i < 169; i = ++_i) {
-      if (!(i % 14 && i % 12)) {
-        draw.tile(i);
-      }
-    }
-    game.tileContainer.filters = [game.grayscale];
-    return game.tileContainer.cache(0, 0, 13 * game.tileWidth, 13 * game.tileHeight);
-  },
-  menu: function() {
-    menu.levelLabel = draw.button(menuObj.levelLabel);
-    menu.plusBtn = draw.button(menuObj.plusBtn);
-    menu.minusBtn = draw.button(menuObj.minusBtn);
-    menu.startBtn = draw.button(menuObj.startBtn);
-    return stage.addChild(menu.levelLabel.container, menu.plusBtn.container, menu.minusBtn.container, menu.startBtn.container);
-  },
-  button: function(obj) {
-    var button, buttonContainer, text;
-    buttonContainer = new createjs.Container();
-    button = new createjs.Shape();
-    text = new createjs.Text(obj.text, "" + obj.textSize + " Arial", obj.color);
-    buttonContainer.x = obj.x;
-    buttonContainer.y = obj.y;
-    text.x = obj.textX;
-    text.y = obj.textY;
-    if (obj.textAlign) {
-      text.textAlign = obj.textAlign;
-    }
-    text.name = obj.name;
-    button.graphics.beginFill(obj.backgroundColor).drawRect(0, 0, obj.width, obj.height);
-    if (obj.click) {
-      button.addEventListener('click', obj.click);
-    }
-    buttonContainer.addChild(button, text);
-    return {
-      container: buttonContainer,
-      text: text,
-      button: button
-    };
-  }
+  sepia: new createjs.ColorMatrixFilter([0.39, 0.77, 0.19, 0, 0, 0.35, 0.68, 0.17, 0, 0, 0.27, 0.53, 0.13, 0, 0, 0, 0, 0, 1, 0])
 };
 
 utilities = {
   numberToCoord: function(num) {
     var y;
     y = 0;
-    while (num >= 13) {
-      num -= 13;
+    while (num >= game.size) {
+      num -= game.size;
       y++;
     }
     return {
@@ -301,32 +56,656 @@ utilities = {
   numberToRotationCoord: function(num) {
     var y;
     y = 0;
-    while (num >= 13) {
-      num -= 13;
+    while (num >= game.size) {
+      num -= game.size;
       y++;
     }
     return {
-      x: num - 6,
-      y: y - 6
+      x: num - ((game.size - 1) / 2),
+      y: y - ((game.size - 1) / 2)
     };
   },
   getRotation: function(num, point) {
     var midCell;
-    midCell = Math.floor(169 / 2);
+    midCell = Math.floor((game.size * game.size) / 2);
     switch (num) {
       case 1:
-        return midCell + 13 * point.y + point.x;
+        return midCell + game.size * point.y + point.x;
       case 2:
-        return midCell + 13 * point.x - point.y;
+        return midCell + game.size * point.x - point.y;
       case 3:
-        return midCell - 13 * point.y - point.x;
+        return midCell - game.size * point.y - point.x;
       case 4:
-        return midCell - 13 * point.x + point.y;
+        return midCell - game.size * point.x + point.y;
     }
   },
   randomColor: function() {
     var colors;
-    colors = ['#FF0000', '#FFFF00', '#0066FF', '#009933', '#FF9933'];
+    colors = ['#FF0000', 'purple', '#0066FF', '#009933', '#FF9933'];
     return colors[Math.randomSeed(0, colors.length + 1)];
   }
 };
+
+hoverIn = function(tileId) {
+  var i, others, point, tc, _i, _len;
+  tc = $(game.tileContainer)[0];
+  point = utilities.numberToRotationCoord(tileId);
+  others = (function() {
+    var _i, _results;
+    _results = [];
+    for (i = _i = 4; _i >= 1; i = --_i) {
+      _results.push(utilities.getRotation(i, point));
+    }
+    return _results;
+  })();
+  for (_i = 0, _len = others.length; _i < _len; _i++) {
+    i = others[_i];
+    $(tc.children[i].children[0]).animate({
+      x: -(game.tileWidth / 4),
+      y: -(game.tileHeight / 4),
+      scaleX: 1.5,
+      scaleY: 1.5
+    }, 0, 125);
+  }
+  return $(tc.children[tileId].children[0]).animate({
+    x: -(game.tileWidth / 4),
+    y: -(game.tileHeight / 4),
+    scaleX: 1.5,
+    scaleY: 1.5
+  }, 0, 1000, 'linear', false, true);
+};
+
+hoverOut = function(tileId) {
+  var i, others, point, tc, _i, _len, _results;
+  tc = $(game.tileContainer)[0];
+  point = utilities.numberToRotationCoord(tileId);
+  others = (function() {
+    var _i, _results;
+    _results = [];
+    for (i = _i = 4; _i >= 1; i = --_i) {
+      _results.push(utilities.getRotation(i, point));
+    }
+    return _results;
+  })();
+  _results = [];
+  for (_i = 0, _len = others.length; _i < _len; _i++) {
+    i = others[_i];
+    _results.push($(tc.children[i].children[0]).animate({
+      x: 0,
+      y: 0,
+      scaleX: 1,
+      scaleY: 1
+    }, 0, 125));
+  }
+  return _results;
+};
+
+changeColor = function(tile, newColor) {
+  if (newColor == null) {
+    newColor = false;
+  }
+  if (!newColor) {
+    newColor = utilities.randomColor();
+  }
+  return $(tile.children[0]).animate({
+    x: game.tileWidth / 2,
+    y: game.tileHeight / 2,
+    scaleX: 0,
+    scaleY: 0
+  }, 0, 125, 'linear', function() {
+    $.changeColor(this, newColor, game.tileWidth / 2, game.tileHeight / 2);
+    return $(this).animate({
+      x: 0,
+      y: 0,
+      scaleX: 1,
+      scaleY: 1
+    }, 0, 125, 'linear', function() {
+      return detectSameTiles(tile.tileId);
+    });
+  });
+};
+
+swapAnimation = function(source, destination, color) {
+  var color1, color2, destinationPrevious, sourcePrevious;
+  if (color == null) {
+    color = false;
+  }
+  if (color) {
+    color1 = source.children[0].color;
+    color2 = destination.children[0].color;
+  } else {
+    color1 = utilities.randomColor();
+    color2 = utilities.randomColor();
+  }
+  sourcePrevious = {
+    x: source.x,
+    y: source.y
+  };
+  destinationPrevious = {
+    x: destination.x,
+    y: destination.y
+  };
+  $(source).animate({
+    x: destination.x,
+    y: destination.y
+  }, 0, 125, 'linear', function() {
+    source.x = sourcePrevious.x;
+    source.y = sourcePrevious.y;
+    return $.changeColor(this.children[0], color2, game.tileWidth / 2, game.tileHeight / 2);
+  });
+  $(destination).animate({
+    x: source.x,
+    y: source.y
+  }, 0, 125, 'linear', function() {
+    destination.x = destinationPrevious.x;
+    destination.y = destinationPrevious.y;
+    return $.changeColor(this.children[0], color1, game.tileWidth / 2, game.tileHeight / 2);
+  });
+  return setTimeout(function() {
+    hoverOut(source.tileId);
+    detectSameTiles(source.tileId);
+    return detectSameTiles(destination.tileId);
+  }, 200);
+};
+
+swap = function(source, destination) {
+  var i, others, p, point;
+  point = utilities.numberToRotationCoord(source.tileId);
+  others = (function() {
+    var _i, _results;
+    _results = [];
+    for (i = _i = 4; _i >= 1; i = --_i) {
+      _results.push(utilities.getRotation(i, point));
+    }
+    return _results;
+  })();
+  p = (function() {
+    var _i, _len, _results;
+    _results = [];
+    for (_i = 0, _len = others.length; _i < _len; _i++) {
+      p = others[_i];
+      if (p === destination.tileId) {
+        _results.push(p);
+      }
+    }
+    return _results;
+  })();
+  if (p.length) {
+    if (source.children[0].color === destination.children[0].color && source.tileId !== destination.tileId) {
+      swapAnimation(source, destination);
+      return score.add(destination, 5);
+    } else {
+      return swapAnimation(source, destination, true);
+    }
+  } else {
+    return game.selectedTile = tileId;
+  }
+};
+
+click = function(e) {
+  var i, others, point, swapped, tileId, _i, _len;
+  if (game.enabled) {
+    tileId = e.currentTarget.tileId;
+    if (game.selectedTile) {
+      point = utilities.numberToRotationCoord(tileId);
+      others = (function() {
+        var _i, _results;
+        _results = [];
+        for (i = _i = 4; _i >= 1; i = --_i) {
+          _results.push(utilities.getRotation(i, point));
+        }
+        return _results;
+      })();
+      swapped = false;
+      for (_i = 0, _len = others.length; _i < _len; _i++) {
+        i = others[_i];
+        if (i === game.selectedTile) {
+          swapped = true;
+          swap(game.tileContainer.children[i], e.currentTarget);
+          hoverOut(i);
+        }
+      }
+      hoverIn(game.selectedTile);
+      if (!swapped) {
+        hoverOut(game.selectedTile);
+        game.selectedTile = false;
+        return click(e);
+      } else {
+        return game.selectedTile = false;
+      }
+    } else {
+      hoverIn(tileId);
+      return game.selectedTile = e.currentTarget.tileId;
+    }
+  }
+};
+
+getHoriLine = function(index) {
+  var hori, i, left;
+  i = index;
+  if ((i - 1) % game.size) {
+    i--;
+  }
+  while ((i + 1) % game.size && i % (game.size + 1) && i % (game.size - 1)) {
+    i--;
+  }
+  left = i;
+  i = index;
+  while (i % (game.size + 1) && i % (game.size - 1) && (i + 1) % game.size) {
+    i++;
+  }
+  hori = [];
+  while (left < i) {
+    left++;
+    if (left % (game.size + 1) && left % (game.size - 1)) {
+      hori.push(left);
+    }
+  }
+  return hori;
+};
+
+getVertLine = function(index) {
+  var i, top, vert;
+  i = index;
+  while (i % (game.size + 1) && i % (game.size - 1) && i > (game.size - 1)) {
+    i -= game.size;
+  }
+  top = i;
+  if (top < (game.size * 2)) {
+    top -= game.size;
+  }
+  i = index;
+  while (i % (game.size + 1) && i % (game.size - 1) && i < (game.size * (game.size - 1))) {
+    i += game.size;
+  }
+  vert = [];
+  while (top < i) {
+    top += game.size;
+    if (top % (game.size + 1) && top % (game.size - 1)) {
+      vert.push(top);
+    }
+  }
+  return vert;
+};
+
+detectSameTiles = function(tileId) {
+  var h, hori, horiIndex, i, tc, v, vert, vertIndex, _i, _j, _k, _l, _len, _len1, _len2, _len3;
+  vert = [];
+  hori = [];
+  tc = $(game.tileContainer)[0];
+  vertIndex = getVertLine(tileId);
+  horiIndex = getHoriLine(tileId);
+  for (_i = 0, _len = vertIndex.length; _i < _len; _i++) {
+    v = vertIndex[_i];
+    v = tc.children[v].children[0].color;
+    if (v) {
+      vert.push(v);
+    }
+  }
+  for (_j = 0, _len1 = horiIndex.length; _j < _len1; _j++) {
+    h = horiIndex[_j];
+    h = tc.children[h].children[0].color;
+    if (h) {
+      hori.push(h);
+    }
+  }
+  if (vertIndex.length > 1) {
+    if (vert.unique().length === 1) {
+      for (_k = 0, _len2 = vertIndex.length; _k < _len2; _k++) {
+        i = vertIndex[_k];
+        changeColor(tc.children[i]);
+      }
+      score.add(tc.children[i], vertIndex.length * 10);
+    }
+  }
+  if (horiIndex.length > 1) {
+    if (hori.unique().length === 1) {
+      for (_l = 0, _len3 = horiIndex.length; _l < _len3; _l++) {
+        i = horiIndex[_l];
+        changeColor(tc.children[i]);
+      }
+      return score.add(tc.children[i], horiIndex.length * 10);
+    }
+  }
+};
+
+score = {
+  labels: {
+    current: false,
+    last: false,
+    best: false
+  },
+  current: 0,
+  add: function(sender, input) {
+    var addedTime, newTime;
+    drawScoreGhost(sender, input);
+    score.current = score.current + input;
+    score.labels.current.text = "Score: " + score.current;
+    addedTime = Math.round(score.current / 750);
+    newTime = timer.current + addedTime;
+    if (newTime > timer.total) {
+      return timer.current = timer.total;
+    } else {
+      return timer.current = newTime;
+    }
+  },
+  setBest: function() {
+    if (window.localStorage['best' + game.level] == null) {
+      window.localStorage['best' + game.level] = 0;
+    }
+    if (window.localStorage['last' + game.level] == null) {
+      window.localStorage['last' + game.level] = 0;
+    }
+    score.labels.last.text = "Last: " + window.localStorage['last' + game.level];
+    return score.labels.best.text = "Best: " + window.localStorage['best' + game.level];
+  }
+};
+
+timer = {
+  timer: false,
+  current: false,
+  total: 2.5 * 60,
+  start: function() {
+    var wc;
+    game.enabled = true;
+    score.labels.current = $('score')[0];
+    score.labels.last = $('last-score')[0];
+    score.labels.best = $('best-score')[0];
+    $('quit')[0].text = "Stop";
+    timer.current = timer.total;
+    game.tileContainer.filters = [];
+    wc = $('white-cover');
+    return timer.timer = setInterval(function() {
+      var minutes, percPixels, percTime, seconds;
+      timer.current -= 1;
+      minutes = Math.floor(timer.current / 60);
+      minutes = ('0' + minutes).slice(-2);
+      seconds = timer.current - (60 * minutes);
+      seconds = ('0' + seconds).slice(-2);
+      $('timer')[0].text = "" + minutes + ":" + seconds;
+      percTime = (timer.current / timer.total) * 100;
+      percPixels = ((game.size * game.tileHeight) / 100) * (100 - percTime);
+      wc.animate({
+        y: -percPixels
+      }, 0, 1000);
+      if (!timer.current) {
+        return timer.stop();
+      }
+    }, 1000);
+  },
+  stop: function() {
+    clearInterval(timer.timer);
+    window.localStorage['last' + game.level] = score.current;
+    if (window.localStorage['best' + game.level] < score.current) {
+      window.localStorage['best' + game.level] = score.current;
+    }
+    score.setBest();
+    $('tileContainer')[0].filters = [game.grayscale];
+    game.tileContainer.cache(0, 0, game.size * game.tileWidth, game.size * game.tileHeight);
+    game.enabled = false;
+    $('quit')[0].text = "Quit";
+    score.current = 0;
+    $('white-cover').animate({
+      y: 0
+    }, 1000, 1000);
+    return drawEndGameMenu();
+  }
+};
+
+drawScoreGhost = function(tile, value) {
+  var count, name, scoreLabel;
+  count = 0;
+  if (game.scoreGhostContainer.children) {
+    count = game.scoreGhostContainer.children.length;
+  }
+  name = "scoreghost-" + count;
+  game.scoreGhostContainer.addChild($.create.text({
+    name: name,
+    text: "+" + value,
+    size: "14px",
+    x: tile.x + (game.tileWidth / 2),
+    y: tile.y + (game.tileHeight / 2),
+    color: "rgba(0,0,0,0.5)"
+  }));
+  scoreLabel = $('score')[0];
+  return $(name).animate({
+    x: scoreLabel.x + 50,
+    y: scoreLabel.y
+  }, 0, 1000, 'cubicIn', function() {
+    return game.scoreGhostContainer.removeChild(this);
+  });
+};
+
+drawScore = function() {
+  stage.addChild($.create.text({
+    name: "score",
+    text: "Score: 0",
+    size: "18px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 32 + game.tileHeight
+  }));
+  stage.addChild($.create.text({
+    name: "last-score",
+    text: "Last: 0",
+    size: "18px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 54 + game.tileHeight
+  }));
+  stage.addChild($.create.text({
+    name: "best-score",
+    text: "Best: 0",
+    size: "18px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 76 + game.tileHeight
+  }));
+  return stage.addChild(drawButton({
+    name: 'quit',
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 0,
+    width: 2 * game.tileWidth,
+    height: game.tileHeight,
+    color: 'purple',
+    text: "Quit",
+    textSize: "24px",
+    textX: 24,
+    textY: 3,
+    textColor: 'white',
+    click: function() {
+      if (game.enabled) {
+        return timer.stop();
+      } else {
+
+      }
+    }
+  }));
+};
+
+drawTimer = function() {
+  var minutes, seconds, text;
+  minutes = Math.floor(timer.total / 60);
+  seconds = timer.total - (60 * minutes);
+  minutes = ('0' + minutes).slice(-2);
+  seconds = ('0' + seconds).slice(-2);
+  text = "" + minutes + ":" + seconds;
+  return stage.addChild($.create.text({
+    name: "timer",
+    text: text,
+    size: "24px",
+    x: game.size * game.tileWidth + game.tileWidth / 4,
+    y: 5 + game.tileHeight
+  }));
+};
+
+drawPurpleX = function(full) {
+  var height, y;
+  if (full == null) {
+    full = false;
+  }
+  height = game.size * game.tileHeight;
+  stage.addChild($.create.rectangle({
+    name: 'purplex',
+    x: 0,
+    y: 0,
+    width: game.size * game.tileWidth,
+    height: height,
+    color: 'purple',
+    scaleX: 1,
+    scaleY: 1
+  }));
+  if (full) {
+    y = -height;
+  } else {
+    y = 0;
+  }
+  return stage.addChild($.create.rectangle({
+    name: 'white-cover',
+    x: 0,
+    y: y,
+    width: game.size * game.tileWidth,
+    height: height,
+    color: 'white',
+    scaleX: 1,
+    scaleY: 1
+  }));
+};
+
+drawTriangles = function() {
+  var s, s2, sf2, sr2, th, th2, triangle1, triangle2, triangle3, triangle4, tw, tw2;
+  triangle1 = new createjs.Shape();
+  triangle2 = new createjs.Shape();
+  triangle3 = new createjs.Shape();
+  triangle4 = new createjs.Shape();
+  triangle1.graphics.beginFill("white");
+  triangle2.graphics.beginFill("white");
+  triangle3.graphics.beginFill("white");
+  triangle4.graphics.beginFill("white");
+  s = game.size;
+  s2 = game.size / 2;
+  sf2 = Math.floor(game.size / 2);
+  sr2 = Math.round(game.size / 2);
+  tw = game.tileWidth;
+  tw2 = game.tileWidth / 4;
+  th = game.tileHeight;
+  th2 = game.tileHeight / 4;
+  triangle1.graphics.moveTo(0, th2).lineTo((sf2 * tw) + tw2, s2 * th).lineTo(0, (s * th) - th2).lineTo(0, th2);
+  triangle2.graphics.moveTo(tw2, 0).lineTo(s2 * tw, (sf2 * th) + th2).lineTo((s * tw) - tw2, 0).lineTo(tw2, 0);
+  triangle3.graphics.moveTo(s * tw, th2).lineTo((sr2 * tw) - tw2, s2 * th).lineTo(s * tw, (s * th) - th2).lineTo(s * tw, th2);
+  triangle4.graphics.moveTo(0, (s * th) + th2).lineTo(s2 * tw, (sr2 * th) - th2).lineTo(s * tw, (s * th) + th2).lineTo(0, (s * th) + th2);
+  return stage.addChild(triangle1, triangle2, triangle3, triangle4);
+};
+
+drawGame = function() {
+  var circle, coord, filler, i, index, tc, tile, _i, _j, _len, _ref, _ref1;
+  stage.removeAllChildren();
+  drawTimer();
+  drawScore();
+  score.setBest();
+  drawPurpleX();
+  drawTriangles();
+  game.selectedContainer = $.create.container('selectedContainer');
+  game.followersContainer = $.create.container('followersContainer');
+  game.tileContainer = $.create.container('tileContainer');
+  game.scoreGhostContainer = $.create.container('scoreGhost');
+  tc = $(game.tileContainer);
+  for (i = _i = 0, _ref = game.size * game.size; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
+    if (i % (game.size + 1) && i % (game.size - 1)) {
+      coord = utilities.numberToCoord(i);
+      tile = $.create.container("tile" + i);
+      tile.x = coord.x * game.tileWidth;
+      tile.y = coord.y * game.tileHeight;
+      tile.tileId = i;
+      filler = $.create.rectangle({
+        name: "tile" + i + "-filler",
+        width: game.tileWidth,
+        height: game.tileHeight,
+        color: 'rgba(255,255,255,0.1)',
+        x: 0,
+        y: 0,
+        scaleX: 1,
+        scaleY: 1
+      });
+      circle = $.create.circle({
+        name: "tile" + i + "-circle",
+        radius: 10,
+        x: game.tileWidth / 2,
+        y: game.tileHeight / 2,
+        scaleX: 0,
+        scaleY: 0,
+        color: utilities.randomColor()
+      });
+      tile.addChild(circle, filler);
+      tile.addEventListener('click', click);
+    } else {
+      tile = $.create.container("tile" + i);
+    }
+    tc.addChild(tile);
+  }
+  _ref1 = tc[0].children;
+  for (index = _j = 0, _len = _ref1.length; _j < _len; index = ++_j) {
+    tile = _ref1[index];
+    if (tile.children) {
+      $(tile.children[0]).animate({
+        x: 0,
+        y: 0,
+        scaleX: 1.0,
+        scaleY: 1.0
+      }, index * 10, 1000);
+    }
+  }
+  return setTimeout(function() {
+    timer.timer = false;
+    return timer.start();
+  }, 1500);
+};
+
+drawEndGameMenu = function() {
+  var k, _results;
+  _results = [];
+  for (k in endGameMenu) {
+    _results.push(stage.addChild(drawButton(endGameMenu[k])));
+  }
+  return _results;
+};
+
+drawButton = function(obj) {
+  var button, buttonContainer, text;
+  buttonContainer = new createjs.Container();
+  button = new createjs.Shape();
+  text = new createjs.Text(obj.text, "" + obj.textSize + " Arial", obj.textColor);
+  text = $.create.text({
+    name: obj.name,
+    text: obj.text,
+    size: obj.textSize,
+    align: obj.textAlign,
+    x: obj.textX,
+    y: obj.textY,
+    color: obj.textColor
+  });
+  buttonContainer.x = obj.x;
+  buttonContainer.y = obj.y;
+  button.graphics.beginFill(obj.color).drawRect(0, 0, obj.width, obj.height);
+  if (obj.click) {
+    button.addEventListener('click', obj.click);
+  }
+  buttonContainer.addChild(button, text);
+  return buttonContainer;
+};
+
+drawMenu = function() {
+  var k;
+  stage.removeAllChildren();
+  drawPurpleX(true);
+  drawTriangles();
+  drawScore();
+  score.setBest();
+  for (k in menuObj) {
+    stage.addChild(drawButton(menuObj[k]));
+  }
+  return $('level-label')[0].text = game.level;
+};
+
+window.onload = drawMenu;
+
+document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3));
+
+document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 20);

@@ -1,4 +1,4 @@
-var changeColor, click, detectSameTiles, drawButton, drawGame, drawMenu, drawPurpleX, drawScore, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, score, swap, swapAnimation, timer, utilities;
+var changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawMenu, drawPurpleX, drawScore, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, score, swap, swapAnimation, timer, utilities;
 
 Array.prototype.unique = function() {
   var a, i, l, u;
@@ -205,7 +205,7 @@ swapAnimation = function(source, destination, color) {
     hoverOut(source.tileId);
     detectSameTiles(source.tileId);
     return detectSameTiles(destination.tileId);
-  }, 150);
+  }, 200);
 };
 
 swap = function(source, destination) {
@@ -372,7 +372,7 @@ score = {
     var addedTime, newTime;
     score.current = score.current + input;
     $('score')[0].text = "Score: " + score.current;
-    addedTime = Math.round(score.current / 500);
+    addedTime = Math.round(score.current / 1000);
     newTime = timer.current + addedTime;
     if (newTime > timer.total) {
       return timer.current = timer.total;
@@ -395,7 +395,7 @@ score = {
 timer = {
   timer: false,
   current: false,
-  total: 1 * 60,
+  total: 2.5 * 60,
   start: function() {
     var wc;
     game.enabled = true;
@@ -405,9 +405,6 @@ timer = {
     return timer.timer = setInterval(function() {
       var minutes, percPixels, percTime, seconds;
       timer.current -= 1;
-      if (!timer.current) {
-        timer.stop();
-      }
       minutes = Math.floor(timer.current / 60);
       minutes = ('0' + minutes).slice(-2);
       seconds = timer.current - (60 * minutes);
@@ -415,9 +412,12 @@ timer = {
       $('timer')[0].text = "" + minutes + ":" + seconds;
       percTime = (timer.current / timer.total) * 100;
       percPixels = ((game.size * game.tileHeight) / 100) * (100 - percTime);
-      return wc.animate({
+      wc.animate({
         y: -percPixels
       }, 0, 1000);
+      if (!timer.current) {
+        return timer.stop();
+      }
     }, 1000);
   },
   stop: function() {
@@ -429,7 +429,11 @@ timer = {
     score.setBest();
     $('tileContainer')[0].filters = [game.grayscale];
     game.tileContainer.cache(0, 0, game.size * game.tileWidth, game.size * game.tileHeight);
-    return game.enabled = false;
+    game.enabled = false;
+    score.current = 0;
+    return $('white-cover').animate({
+      y: 0
+    }, 1000, 1000, 'linear', drawEndGameMenu);
   }
 };
 
@@ -485,12 +489,14 @@ drawPurpleX = function(full) {
     y: 0,
     width: game.size * game.tileWidth,
     height: height,
-    color: 'purple'
+    color: 'purple',
+    scaleX: 1,
+    scaleY: 1
   }));
   if (full) {
     y = -height;
   } else {
-    0;
+    y = 0;
   }
   return stage.addChild($.create.rectangle({
     name: 'white-cover',
@@ -498,7 +504,9 @@ drawPurpleX = function(full) {
     y: y,
     width: game.size * game.tileWidth,
     height: height,
-    color: 'white'
+    color: 'white',
+    scaleX: 1,
+    scaleY: 1
   }));
 };
 
@@ -528,16 +536,13 @@ drawTriangles = function() {
 };
 
 drawGame = function() {
-  var circle, coord, filler, i, index, tc, tile, _i, _j, _len, _ref, _ref1, _results;
+  var circle, coord, filler, i, index, tc, tile, _i, _j, _len, _ref, _ref1;
   stage.removeAllChildren();
-  drawPurpleX();
-  drawTriangles();
   drawTimer();
   drawScore();
   score.setBest();
-  setTimeout(function() {
-    return timer.start();
-  }, 1000);
+  drawPurpleX();
+  drawTriangles();
   game.selectedContainer = $.create.container('selectedContainer');
   game.followersContainer = $.create.container('followersContainer');
   game.tileContainer = $.create.container('tileContainer');
@@ -574,19 +579,28 @@ drawGame = function() {
     tc.addChild(tile);
   }
   _ref1 = tc[0].children;
-  _results = [];
   for (index = _j = 0, _len = _ref1.length; _j < _len; index = ++_j) {
     tile = _ref1[index];
     if (tile.children) {
-      _results.push($(tile.children[0]).animate({
+      $(tile.children[0]).animate({
         x: 0,
         y: 0,
         scaleX: 1.0,
         scaleY: 1.0
-      }, index * 10, 1000));
-    } else {
-      _results.push(void 0);
+      }, index * 10, 1000);
     }
+  }
+  return setTimeout(function() {
+    timer.timer = false;
+    return timer.start();
+  }, 1500);
+};
+
+drawEndGameMenu = function() {
+  var k, _results;
+  _results = [];
+  for (k in endGameMenu) {
+    _results.push(stage.addChild(drawButton(endGameMenu[k])));
   }
   return _results;
 };
