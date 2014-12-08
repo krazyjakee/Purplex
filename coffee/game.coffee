@@ -65,7 +65,7 @@ utilities =
       when 4 then return midCell - game.size * point.x + (point.y)
 
   randomColor: ->
-    colors = ['#FF0000', 'purple', '#0066FF', '#009933', '#FF9933']
+    colors = ['#e60000', 'purple', '#0066FF', '#009933', '#ffa64d']
     colors[Math.randomSeed(0, colors.length + 1)]
 
 hoverIn = (tileId) ->
@@ -207,6 +207,10 @@ detectSameTiles = (tileId) ->
       score.add tc.children[i], horiIndex.length * 10
 
 score =
+  setup: ->
+    score.labels.current = $('score')[0]
+    score.labels.last = $('last-score')[0]
+    score.labels.best = $('best-score')[0]
   labels:
     current: false
     last: false
@@ -231,9 +235,6 @@ timer =
   total: (2.5 * 60)
   start: ->
     game.enabled = true
-    score.labels.current = $('score')[0]
-    score.labels.last = $('last-score')[0]
-    score.labels.best = $('best-score')[0]
     $('quit')[0].text = "Stop"
     timer.current = timer.total
     game.tileContainer.filters = []
@@ -412,6 +413,7 @@ drawGame = ->
   stage.removeAllChildren()
   drawTimer()
   drawScore()
+  score.setup()
   score.setBest()
   drawPurpleX()
   drawTriangles()
@@ -492,6 +494,7 @@ drawMenu = ->
   drawPurpleX(true)
   drawTriangles()
   drawScore()
+  score.setup()
   score.setBest()
 
   stage.addChild(drawButton(menuObj[k])) for k of menuObj

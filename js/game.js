@@ -81,7 +81,7 @@ utilities = {
   },
   randomColor: function() {
     var colors;
-    colors = ['#FF0000', 'purple', '#0066FF', '#009933', '#FF9933'];
+    colors = ['#e60000', 'purple', '#0066FF', '#009933', '#ffa64d'];
     return colors[Math.randomSeed(0, colors.length + 1)];
   }
 };
@@ -370,6 +370,11 @@ detectSameTiles = function(tileId) {
 };
 
 score = {
+  setup: function() {
+    score.labels.current = $('score')[0];
+    score.labels.last = $('last-score')[0];
+    return score.labels.best = $('best-score')[0];
+  },
   labels: {
     current: false,
     last: false,
@@ -408,9 +413,6 @@ timer = {
   start: function() {
     var wc;
     game.enabled = true;
-    score.labels.current = $('score')[0];
-    score.labels.last = $('last-score')[0];
-    score.labels.best = $('best-score')[0];
     $('quit')[0].text = "Stop";
     timer.current = timer.total;
     game.tileContainer.filters = [];
@@ -599,6 +601,7 @@ drawGame = function() {
   stage.removeAllChildren();
   drawTimer();
   drawScore();
+  score.setup();
   score.setBest();
   drawPurpleX();
   drawTriangles();
@@ -697,6 +700,7 @@ drawMenu = function() {
   drawPurpleX(true);
   drawTriangles();
   drawScore();
+  score.setup();
   score.setBest();
   for (k in menuObj) {
     stage.addChild(drawButton(menuObj[k]));
