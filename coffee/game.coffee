@@ -40,6 +40,7 @@ window.game =
     0.27, 0.53, 0.13, 0, 0,
     0, 0, 0, 1, 0
   ])
+  sfx: ['Coin01', 'Downer01', 'FX01', 'Rise01', 'Rise02', 'Rise03', 'Upper01']
 
 utilities = 
   numberToCoord: (num) ->
@@ -67,6 +68,17 @@ utilities =
   randomColor: ->
     colors = ['#e60000', 'purple', '#0066FF', '#009933', '#ffa64d']
     colors[Math.randomSeed(0, colors.length + 1)]
+
+loadSounds = ->
+  for i in game.sfx
+    createjs.Sound.registerSound "sfx/#{i}.ogg", i
+
+playSound = (sound) -> createjs.Sound.play sound
+
+loadedSounds = 0
+createjs.Sound.addEventListener "fileload", ->
+  loadedSounds++
+  drawMenu() if loadedSounds is game.sfx.length
 
 hoverIn = (tileId) ->
   tc = $(game.tileContainer)[0]
@@ -130,6 +142,7 @@ swap = (source, destination) ->
     if source.children[0].color is destination.children[0].color and source.tileId != destination.tileId
       swapAnimation source, destination
       score.add destination, 5
+      playSound "Rise01"
     else
       swapAnimation source, destination, true
   else
@@ -197,14 +210,27 @@ detectSameTiles = (tileId) ->
     h = tc.children[h].children[0].color
     hori.push h if h
 
+  newScore = false
   if vertIndex.length > 1
     if vert.unique().length is 1
       changeColor(tc.children[i]) for i in vertIndex
-      score.add tc.children[i], vertIndex.length * 10
+      newScore = vertIndex.length * 10
+      score.add tc.children[i], newScore
   if horiIndex.length > 1
     if hori.unique().length is 1
       changeColor(tc.children[i]) for i in horiIndex
-      score.add tc.children[i], horiIndex.length * 10
+      newScore = horiIndex.length * 10
+      score.add tc.children[i], newScore
+  
+  if newScore > 5
+    if newScore < 20
+      playSound "Rise02"
+    else if newScore <= 40
+      playSound "Coin01"
+    else if newScore > 40
+      playSound "Rise03"
+
+
 
 score =
   setup: ->
@@ -220,7 +246,7 @@ score =
     drawScoreGhost sender, input
     score.current = score.current + input
     score.labels.current.text = "Score: " + score.current
-    addedTime = Math.round score.current / 750
+    addedTime = Math.round input / 10
     newTime = timer.current + addedTime
     if newTime > timer.total then timer.current = timer.total else timer.current = newTime
   setBest: ->
@@ -255,6 +281,7 @@ timer =
     , 1000
 
   stop: ->
+    playSound "Downer01"
     clearInterval timer.timer
     window.localStorage['last'+game.level] = score.current
     window.localStorage['best'+game.level] = score.current if window.localStorage['best'+game.level] < score.current
@@ -411,6 +438,7 @@ drawTriangles = ->
 
 drawGame = ->
   stage.removeAllChildren()
+  playSound "FX01"
   drawTimer()
   drawScore()
   score.setup()
@@ -462,6 +490,7 @@ drawGame = ->
       $(tile.children[0]).animate { x: 0, y: 0, scaleX: 1.0, scaleY: 1.0 }, index * 10, 1000
 
   setTimeout ->
+    playSound "Upper01"
     timer.timer = false
     timer.start()
   , 1500
@@ -499,7 +528,17 @@ drawMenu = ->
 
   stage.addChild(drawButton(menuObj[k])) for k of menuObj
   $('level-label')[0].text = game.level
-window.onload = drawMenu
+
+drawLoading = ->
+  loadSounds()
+  stage.addChild $.create.text
+    name: 'loadingLabel'
+    color: 'black'
+    text: 'Loading...'
+    type: 'text'
+    x: 10
+    y: 10
+window.onload = drawLoading
 
 document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3))
 document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 20)

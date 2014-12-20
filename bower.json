@@ -15,6 +15,7 @@
   ],
   "dependencies": {
     "easeljs": "git@github.com:CreateJS/EaselJS.git",
-    "tweenjs": "git@github.com:CreateJS/TweenJS.git"
+    "tweenjs": "git@github.com:CreateJS/TweenJS.git",
+    "soundjs": "git@github.com:CreateJS/SoundJS.git"
   }
 }

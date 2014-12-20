@@ -1,4 +1,4 @@
-var changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, score, swap, swapAnimation, timer, utilities;
+var changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawLoading, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, loadSounds, loadedSounds, playSound, score, swap, swapAnimation, timer, utilities;
 
 Array.prototype.unique = function() {
   var a, i, l, u;
@@ -37,7 +37,8 @@ window.game = {
   tileHeight: 35,
   selectedTile: false,
   grayscale: new createjs.ColorMatrixFilter([0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0.30, 0.30, 0.30, 0, 0, 0, 0, 0, 1, 0]),
-  sepia: new createjs.ColorMatrixFilter([0.39, 0.77, 0.19, 0, 0, 0.35, 0.68, 0.17, 0, 0, 0.27, 0.53, 0.13, 0, 0, 0, 0, 0, 1, 0])
+  sepia: new createjs.ColorMatrixFilter([0.39, 0.77, 0.19, 0, 0, 0.35, 0.68, 0.17, 0, 0, 0.27, 0.53, 0.13, 0, 0, 0, 0, 0, 1, 0]),
+  sfx: ['Coin01', 'Downer01', 'FX01', 'Rise01', 'Rise02', 'Rise03', 'Upper01']
 };
 
 utilities = {
@@ -85,6 +86,30 @@ utilities = {
     return colors[Math.randomSeed(0, colors.length + 1)];
   }
 };
+
+loadSounds = function() {
+  var i, _i, _len, _ref, _results;
+  _ref = game.sfx;
+  _results = [];
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    i = _ref[_i];
+    _results.push(createjs.Sound.registerSound("sfx/" + i + ".ogg", i));
+  }
+  return _results;
+};
+
+playSound = function(sound) {
+  return createjs.Sound.play(sound);
+};
+
+loadedSounds = 0;
+
+createjs.Sound.addEventListener("fileload", function() {
+  loadedSounds++;
+  if (loadedSounds === game.sfx.length) {
+    return drawMenu();
+  }
+});
 
 hoverIn = function(tileId) {
   var i, others, point, tc, _i, _len;
@@ -233,7 +258,8 @@ swap = function(source, destination) {
   if (p.length) {
     if (source.children[0].color === destination.children[0].color && source.tileId !== destination.tileId) {
       swapAnimation(source, destination);
-      return score.add(destination, 5);
+      score.add(destination, 5);
+      return playSound("Rise01");
     } else {
       return swapAnimation(source, destination, true);
     }
@@ -329,7 +355,7 @@ getVertLine = function(index) {
 };
 
 detectSameTiles = function(tileId) {
-  var h, hori, horiIndex, i, tc, v, vert, vertIndex, _i, _j, _k, _l, _len, _len1, _len2, _len3;
+  var h, hori, horiIndex, i, newScore, tc, v, vert, vertIndex, _i, _j, _k, _l, _len, _len1, _len2, _len3;
   vert = [];
   hori = [];
   tc = $(game.tileContainer)[0];
@@ -349,13 +375,15 @@ detectSameTiles = function(tileId) {
       hori.push(h);
     }
   }
+  newScore = false;
   if (vertIndex.length > 1) {
     if (vert.unique().length === 1) {
       for (_k = 0, _len2 = vertIndex.length; _k < _len2; _k++) {
         i = vertIndex[_k];
         changeColor(tc.children[i]);
       }
-      score.add(tc.children[i], vertIndex.length * 10);
+      newScore = vertIndex.length * 10;
+      score.add(tc.children[i], newScore);
     }
   }
   if (horiIndex.length > 1) {
@@ -364,7 +392,17 @@ detectSameTiles = function(tileId) {
         i = horiIndex[_l];
         changeColor(tc.children[i]);
       }
-      return score.add(tc.children[i], horiIndex.length * 10);
+      newScore = horiIndex.length * 10;
+      score.add(tc.children[i], newScore);
+    }
+  }
+  if (newScore > 5) {
+    if (newScore < 20) {
+      return playSound("Rise02");
+    } else if (newScore <= 40) {
+      return playSound("Coin01");
+    } else if (newScore > 40) {
+      return playSound("Rise03");
     }
   }
 };
@@ -386,7 +424,7 @@ score = {
     drawScoreGhost(sender, input);
     score.current = score.current + input;
     score.labels.current.text = "Score: " + score.current;
-    addedTime = Math.round(score.current / 750);
+    addedTime = Math.round(input / 10);
     newTime = timer.current + addedTime;
     if (newTime > timer.total) {
       return timer.current = timer.total;
@@ -436,6 +474,7 @@ timer = {
     }, 1000);
   },
   stop: function() {
+    playSound("Downer01");
     clearInterval(timer.timer);
     window.localStorage['last' + game.level] = score.current;
     if (window.localStorage['best' + game.level] < score.current) {
@@ -599,6 +638,7 @@ drawTriangles = function() {
 drawGame = function() {
   var circle, coord, filler, i, index, tc, tile, _i, _j, _len, _ref, _ref1;
   stage.removeAllChildren();
+  playSound("FX01");
   drawTimer();
   drawScore();
   score.setup();
@@ -656,6 +696,7 @@ drawGame = function() {
     }
   }
   return setTimeout(function() {
+    playSound("Upper01");
     timer.timer = false;
     return timer.start();
   }, 1500);
@@ -708,7 +749,19 @@ drawMenu = function() {
   return $('level-label')[0].text = game.level;
 };
 
-window.onload = drawMenu;
+drawLoading = function() {
+  loadSounds();
+  return stage.addChild($.create.text({
+    name: 'loadingLabel',
+    color: 'black',
+    text: 'Loading...',
+    type: 'text',
+    x: 10,
+    y: 10
+  }));
+};
+
+window.onload = drawLoading;
 
 document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3));
 
