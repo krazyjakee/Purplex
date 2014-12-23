@@ -21,6 +21,13 @@ Math.randomSeed = (max, min) ->
   rnd = Math.seed / 233280
   Math.floor(min + rnd * (max - min)) - 1
 
+window.log = []
+addLog = (from, to) ->
+  log.push
+    time: timer.current
+    from: from
+    to: to
+
 window.game =
   enabled: false
   level: 1
@@ -135,6 +142,7 @@ swapAnimation = (source, destination, color = false) ->
   , 200
 
 swap = (source, destination) ->
+  addLog source.tileId, destination.tileId
   point = utilities.numberToRotationCoord source.tileId
   others = (utilities.getRotation(i, point) for i in [4..1])
   p = (p for p in others when p is destination.tileId)
@@ -261,6 +269,8 @@ timer =
   total: (2.5 * 60)
   start: ->
     game.enabled = true
+    score.current = 0
+    log = []
     $('quit')[0].text = "Stop"
     timer.current = timer.total
     game.tileContainer.filters = []
@@ -389,6 +399,16 @@ drawPurpleX = (full = false) ->
     color: 'white'
     scaleX: 1
     scaleY: 1
+  
+  stage.addChild $.create.rectangle
+    name: 'purplexfade'
+    x: 0
+    y: 0
+    width: game.size * game.tileWidth
+    height: height
+    color: 'rgba(128,0,128,0.05)'
+    scaleX: 1
+    scaleY: 1
 
 drawTriangles = ->
   triangle1 = new createjs.Shape()
@@ -479,7 +499,7 @@ drawGame = ->
         color: utilities.randomColor()
 
       tile.addChild circle, filler
-      tile.addEventListener 'click', click
+      tile.addEventListener 'pressup', click
 
     else
       tile = $.create.container "tile#{i}"
@@ -514,7 +534,7 @@ drawButton = (obj) ->
   buttonContainer.x = obj.x
   buttonContainer.y = obj.y
   button.graphics.beginFill(obj.color).drawRect 0, 0, obj.width, obj.height
-  button.addEventListener('click', obj.click) if obj.click
+  button.addEventListener('pressup', obj.click) if obj.click
   buttonContainer.addChild button, text
   return buttonContainer
 
@@ -538,6 +558,7 @@ drawLoading = ->
     type: 'text'
     x: 10
     y: 10
+
 window.onload = drawLoading
 
 document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3))

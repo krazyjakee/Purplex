@@ -99,6 +99,22 @@ menuObj = {
       return drawGame();
     }
   },
+  tutorialBtn: {
+    name: 'tutorialBtn',
+    x: (Math.floor(game.size / 2) - 1) * game.tileWidth,
+    y: (Math.floor(game.size / 2) + 3) * game.tileHeight,
+    width: game.tileWidth * 3,
+    height: game.tileHeight,
+    color: 'purple',
+    text: "Tutorial",
+    textSize: "24px",
+    textX: game.tileWidth / 2 + 10,
+    textY: game.tileHeight / 2 - 15,
+    textColor: 'white',
+    click: function() {
+      return tutorialNext();
+    }
+  },
   spacer: {
     x: (Math.floor(game.size / 2) - 1) * game.tileWidth,
     y: Math.floor(game.size / 2) * game.tileHeight,

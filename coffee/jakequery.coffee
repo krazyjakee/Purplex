@@ -2,7 +2,7 @@ window.stage = new createjs.Stage "canvas"
 stage.y = 10
 stage.x = 10
 createjs.Ticker.addEventListener "tick", stage
-stage.enableMouseOver()
+createjs.Touch.enable stage, true, false
 
 window.$ = (elem = stage) ->
   return new jakeQuery(elem)

@@ -1,4 +1,4 @@
-var changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawLoading, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, loadSounds, loadedSounds, playSound, score, swap, swapAnimation, timer, utilities;
+var addLog, changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawLoading, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, loadSounds, loadedSounds, playSound, score, swap, swapAnimation, timer, utilities;
 
 Array.prototype.unique = function() {
   var a, i, l, u;
@@ -27,6 +27,16 @@ Math.randomSeed = function(max, min) {
   Math.seed = (Math.seed * 9301 + 49297) % 233280;
   rnd = Math.seed / 233280;
   return Math.floor(min + rnd * (max - min)) - 1;
+};
+
+window.log = [];
+
+addLog = function(from, to) {
+  return log.push({
+    time: timer.current,
+    from: from,
+    to: to
+  });
 };
 
 window.game = {
@@ -235,6 +245,7 @@ swapAnimation = function(source, destination, color) {
 
 swap = function(source, destination) {
   var i, others, p, point;
+  addLog(source.tileId, destination.tileId);
   point = utilities.numberToRotationCoord(source.tileId);
   others = (function() {
     var _i, _results;
@@ -449,8 +460,10 @@ timer = {
   current: false,
   total: 2.5 * 60,
   start: function() {
-    var wc;
+    var log, wc;
     game.enabled = true;
+    score.current = 0;
+    log = [];
     $('quit')[0].text = "Stop";
     timer.current = timer.total;
     game.tileContainer.filters = [];
@@ -598,13 +611,23 @@ drawPurpleX = function(full) {
   } else {
     y = 0;
   }
-  return stage.addChild($.create.rectangle({
+  stage.addChild($.create.rectangle({
     name: 'white-cover',
     x: 0,
     y: y,
     width: game.size * game.tileWidth,
     height: height,
     color: 'white',
+    scaleX: 1,
+    scaleY: 1
+  }));
+  return stage.addChild($.create.rectangle({
+    name: 'purplexfade',
+    x: 0,
+    y: 0,
+    width: game.size * game.tileWidth,
+    height: height,
+    color: 'rgba(128,0,128,0.05)',
     scaleX: 1,
     scaleY: 1
   }));
@@ -677,7 +700,7 @@ drawGame = function() {
         color: utilities.randomColor()
       });
       tile.addChild(circle, filler);
-      tile.addEventListener('click', click);
+      tile.addEventListener('pressup', click);
     } else {
       tile = $.create.container("tile" + i);
     }
@@ -729,7 +752,7 @@ drawButton = function(obj) {
   buttonContainer.y = obj.y;
   button.graphics.beginFill(obj.color).drawRect(0, 0, obj.width, obj.height);
   if (obj.click) {
-    button.addEventListener('click', obj.click);
+    button.addEventListener('pressup', obj.click);
   }
   buttonContainer.addChild(button, text);
   return buttonContainer;

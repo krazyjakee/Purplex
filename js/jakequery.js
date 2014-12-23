@@ -8,7 +8,7 @@ stage.x = 10;
 
 createjs.Ticker.addEventListener("tick", stage);
 
-stage.enableMouseOver();
+createjs.Touch.enable(stage, true, false);
 
 window.$ = function(elem) {
   if (elem == null) {
