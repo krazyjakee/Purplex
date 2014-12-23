@@ -1,4 +1,4 @@
-var addLog, changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawLoading, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, loadSounds, loadedSounds, playSound, score, swap, swapAnimation, timer, utilities;
+var addLog, canvas, changeColor, click, detectSameTiles, drawButton, drawEndGameMenu, drawGame, drawLoading, drawMenu, drawPurpleX, drawScore, drawScoreGhost, drawTimer, drawTriangles, getHoriLine, getVertLine, hoverIn, hoverOut, loadSounds, loadedSounds, playSound, score, swap, swapAnimation, timer, utilities;
 
 Array.prototype.unique = function() {
   var a, i, l, u;
@@ -786,6 +786,8 @@ drawLoading = function() {
 
 window.onload = drawLoading;
 
-document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3));
+canvas = document.getElementById('canvas');
 
-document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 20);
+canvas.setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3));
+
+canvas.setAttribute('height', (game.size * game.tileHeight) + 20);

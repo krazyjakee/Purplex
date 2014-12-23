@@ -561,5 +561,6 @@ drawLoading = ->
 
 window.onload = drawLoading
 
-document.getElementById('canvas').setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3))
-document.getElementById('canvas').setAttribute('height', (game.size * game.tileHeight) + 20)
+canvas = document.getElementById('canvas')
+canvas.setAttribute('width', (game.size * game.tileWidth) + (game.tileWidth * 3))
+canvas.setAttribute('height', (game.size * game.tileHeight) + 20)
