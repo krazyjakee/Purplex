@@ -13,6 +13,8 @@ $.extend = (obj, mixin) ->
 
 class jakeQuery
 
+  _searchCache: {}
+
   constructor: (elem) ->
     @create.that = @
     return @ if elem.canvas # if it's a stage object, just return a blank instance
@@ -23,6 +25,7 @@ class jakeQuery
       for k, v of obj
         if k is 'name' and v is name # if the object has the queried name
           @[length++] = obj # make it the instance element
+          $._searchCache[name] = obj
         else if k is 'children' and obj.name != 'noquery' # if it has no children and is allowed to be queried
           for child in obj.children
             recursiveIterator child, name # recurse deeper
@@ -36,7 +39,7 @@ class jakeQuery
         @[0] = elem # or set the instance element
     
     return @ # return the instance
-  
+
   newShape: (obj) ->
     shape = new createjs.Shape()
     shape = $.extend shape, obj

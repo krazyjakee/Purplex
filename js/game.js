@@ -97,29 +97,9 @@ utilities = {
   }
 };
 
-loadSounds = function() {
-  var i, _i, _len, _ref, _results;
-  _ref = game.sfx;
-  _results = [];
-  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-    i = _ref[_i];
-    _results.push(createjs.Sound.registerSound("sfx/" + i + ".ogg", i));
-  }
-  return _results;
-};
-
 playSound = function(sound) {
   return createjs.Sound.play(sound);
 };
-
-loadedSounds = 0;
-
-createjs.Sound.addEventListener("fileload", function() {
-  loadedSounds++;
-  if (loadedSounds === game.sfx.length) {
-    return drawMenu();
-  }
-});
 
 hoverIn = function(tileId) {
   var i, others, point, tc, _i, _len;
@@ -466,6 +446,7 @@ timer = {
     log = [];
     $('quit')[0].text = "Stop";
     timer.current = timer.total;
+    timer.element = $('timer')[0];
     game.tileContainer.filters = [];
     wc = $('white-cover');
     return timer.timer = setInterval(function() {
@@ -475,7 +456,7 @@ timer = {
       minutes = ('0' + minutes).slice(-2);
       seconds = timer.current - (60 * minutes);
       seconds = ('0' + seconds).slice(-2);
-      $('timer')[0].text = "" + minutes + ":" + seconds;
+      timer.element.text = "" + minutes + ":" + seconds;
       percTime = (timer.current / timer.total) * 100;
       percPixels = ((game.size * game.tileHeight) / 100) * (100 - percTime);
       wc.animate({
@@ -507,13 +488,13 @@ timer = {
 };
 
 drawScoreGhost = function(tile, value) {
-  var count, name, scoreLabel;
+  var count, ghost, name;
   count = 0;
   if (game.scoreGhostContainer.children) {
     count = game.scoreGhostContainer.children.length;
   }
   name = "scoreghost-" + count;
-  game.scoreGhostContainer.addChild($.create.text({
+  ghost = game.scoreGhostContainer.addChild($.create.text({
     name: name,
     text: "+" + value,
     size: "14px",
@@ -521,10 +502,9 @@ drawScoreGhost = function(tile, value) {
     y: tile.y + (game.tileHeight / 2),
     color: "rgba(0,0,0,0.5)"
   }));
-  scoreLabel = $('score')[0];
-  return $(name).animate({
-    x: scoreLabel.x + 50,
-    y: scoreLabel.y
+  return $(ghost).animate({
+    x: score.labels.current.x + 50,
+    y: score.labels.current.y
   }, 0, 1000, 'cubicIn', function() {
     return game.scoreGhostContainer.removeChild(this);
   });
@@ -783,6 +763,28 @@ drawLoading = function() {
     y: 10
   }));
 };
+
+loadSounds = function() {
+  var i, _i, _len, _ref, _results;
+  _ref = game.sfx;
+  _results = [];
+  for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+    i = _ref[_i];
+    _results.push(createjs.Sound.registerSound("sfx/" + i + ".ogg", i));
+  }
+  return _results;
+};
+
+loadedSounds = 0;
+
+createjs.Sound.alternateExtensions = ["mp3"];
+
+createjs.Sound.addEventListener("fileload", function() {
+  loadedSounds++;
+  if (loadedSounds === game.sfx.length) {
+    return drawMenu();
+  }
+});
 
 window.onload = drawLoading;
 

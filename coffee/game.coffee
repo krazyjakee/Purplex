@@ -76,16 +76,7 @@ utilities =
     colors = ['#e60000', 'purple', '#0066FF', '#009933', '#ffa64d']
     colors[Math.randomSeed(0, colors.length + 1)]
 
-loadSounds = ->
-  for i in game.sfx
-    createjs.Sound.registerSound "sfx/#{i}.ogg", i
-
 playSound = (sound) -> createjs.Sound.play sound
-
-loadedSounds = 0
-createjs.Sound.addEventListener "fileload", ->
-  loadedSounds++
-  drawMenu() if loadedSounds is game.sfx.length
 
 hoverIn = (tileId) ->
   tc = $(game.tileContainer)[0]
@@ -273,6 +264,7 @@ timer =
     log = []
     $('quit')[0].text = "Stop"
     timer.current = timer.total
+    timer.element = $('timer')[0]
     game.tileContainer.filters = []
 
     wc = $('white-cover')
@@ -282,7 +274,7 @@ timer =
       minutes = ('0' + minutes).slice(-2)
       seconds = timer.current - (60 * minutes)
       seconds = ('0' + seconds).slice(-2)
-      $('timer')[0].text = "#{minutes}:#{seconds}"
+      timer.element.text = "#{minutes}:#{seconds}"
 
       percTime = (timer.current / timer.total) * 100
       percPixels = ((game.size * game.tileHeight) / 100) * (100 - percTime)
@@ -309,15 +301,14 @@ drawScoreGhost = (tile, value) ->
   count = 0
   count = game.scoreGhostContainer.children.length if game.scoreGhostContainer.children
   name = "scoreghost-#{count}"
-  game.scoreGhostContainer.addChild $.create.text
+  ghost = game.scoreGhostContainer.addChild $.create.text
     name: name
     text: "+#{value}"
     size: "14px"
     x: tile.x + (game.tileWidth / 2)
     y: tile.y + (game.tileHeight / 2)
     color: "rgba(0,0,0,0.5)"
-  scoreLabel = $('score')[0]
-  $(name).animate { x: scoreLabel.x + 50, y: scoreLabel.y }, 0, 1000, 'cubicIn', ->
+  $(ghost).animate { x: score.labels.current.x + 50, y: score.labels.current.y }, 0, 1000, 'cubicIn', ->
     game.scoreGhostContainer.removeChild @
 
 drawScore = ->
@@ -416,10 +407,10 @@ drawTriangles = ->
   triangle3 = new createjs.Shape()
   triangle4 = new createjs.Shape()
 
-  triangle1.graphics.beginFill("white")
-  triangle2.graphics.beginFill("white")
-  triangle3.graphics.beginFill("white")
-  triangle4.graphics.beginFill("white")
+  triangle1.graphics.beginFill "white"
+  triangle2.graphics.beginFill "white"
+  triangle3.graphics.beginFill "white"
+  triangle4.graphics.beginFill "white"
 
   s = game.size
   s2 = (game.size / 2)
@@ -558,6 +549,16 @@ drawLoading = ->
     type: 'text'
     x: 10
     y: 10
+
+loadSounds = ->
+  for i in game.sfx
+    createjs.Sound.registerSound "sfx/#{i}.ogg", i
+
+loadedSounds = 0
+createjs.Sound.alternateExtensions = ["mp3"]
+createjs.Sound.addEventListener "fileload", ->
+  loadedSounds++
+  drawMenu() if loadedSounds is game.sfx.length
 
 window.onload = drawLoading
 

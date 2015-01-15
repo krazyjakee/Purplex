@@ -27,6 +27,8 @@ $.extend = function(obj, mixin) {
 };
 
 jakeQuery = (function() {
+  jakeQuery.prototype._searchCache = {};
+
   function jakeQuery(elem) {
     var e, i, length, recursiveIterator, _i, _len;
     this.create.that = this;
@@ -41,7 +43,8 @@ jakeQuery = (function() {
         for (k in obj) {
           v = obj[k];
           if (k === 'name' && v === name) {
-            _results.push(_this[length++] = obj);
+            _this[length++] = obj;
+            _results.push($._searchCache[name] = obj);
           } else if (k === 'children' && obj.name !== 'noquery') {
             _results.push((function() {
               var _i, _len, _ref, _results1;
