@@ -41,16 +41,10 @@ function() {
     },
 
     makeRoundedRectangle : function (x, y, width, height, color){
-      console.log(x);
-      console.log(y);
-      console.log(width);
-      console.log(height);
-
       var graphics = new game.PIXI.Graphics();
       // draw a rounded rectangle
-      graphics.lineStyle(2, color, 1);
-      graphics.beginFill(color, 0.25);
-      graphics.drawRoundedRect(x, y, width, height, 8);
+      graphics.beginFill(color, 1);
+      graphics.drawRect(x, y, width, height, 8);
       graphics.endFill();
       return graphics;
     }
