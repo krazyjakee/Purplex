@@ -28,8 +28,8 @@ purplexConfig.menuObj = {
     height: purplexConfig.tileHeight,
     color: 0xFFFFFF,
     text: "PurpleX",
-    textSize: purplexConfig.tileHeight + "px",
-    textX: 20,
+    textSize: "40px",
+    textX: 4,
     textY: 3,
     textColor: 0x4B0082
   },
@@ -41,8 +41,8 @@ purplexConfig.menuObj = {
     height: purplexConfig.tileHeight / 2,
     color: 0xFFFFFF,
     text: "Select a level",
-    textSize: "38px",
-    textX: purplexConfig.tileWidth / 2,
+    textSize: "18px",
+    textX: 20,
     textY: 3,
     textColor: 0x4B0082
   },
@@ -56,14 +56,14 @@ purplexConfig.menuObj = {
     text: "+",
     textSize: "40px",
     textX: purplexConfig.tileWidth / 2 - 12,
-    textY: purplexConfig.tileHeight / 2 - 18,
+    textY: purplexConfig.tileHeight / 2 - 22,
     textColor: 0xFFFFFF,
     click: function() {
       if (Math.seed < 99) {
         Math.seed++;
-        game.menu.collection['level-label'].children[0].setText(Math.seed);
+        $('level-label')[0].text = Math.seed;
         purplexConfig.level = Math.seed;
-        // score.setBest();
+        return score.setBest();
       }
     }
   },
@@ -84,7 +84,7 @@ purplexConfig.menuObj = {
         Math.seed--;
         $('level-label')[0].text = Math.seed;
         purplexConfig.level = Math.seed;
-        score.setBest();
+        return score.setBest();
       }
     }
   },
@@ -110,9 +110,8 @@ purplexConfig.menuObj = {
     color: 0x4B0082,
     text: "Start Game",
     textSize: "24px",
-    textAlign: "center",
-    textX: (purplexConfig.tileWidth * 2) / 2 - 12,
-    textY: purplexConfig.tileHeight / 2 - 13,
+    textX: purplexConfig.tileWidth / 2 - 12,
+    textY: purplexConfig.tileHeight / 2 - 15,
     textColor: 0xFFFFFF,
     click: function() {
       purplexConfig.level = Math.seed;
@@ -127,11 +126,11 @@ purplexConfig.menuObj = {
     color: 0x4B0082,
     text: "Tutorial",
     textSize: "24px",
-    textX: (purplexConfig.tileWidth * 2) / 2 + 10,
+    textX: purplexConfig.tileWidth / 2 + 10,
     textY: purplexConfig.tileHeight / 2 - 15,
     textColor: 0xFFFFFF,
     click: function() {
-      tutorialNext();
+      return tutorialNext();
     }
   },
   spacer: {
@@ -158,7 +157,7 @@ purplexConfig.endGameMenu = {
     textY: 4,
     click: function() {
       Math.seed = purplexConfig.level;
-      drawGame();
+      return drawGame();
     }
   },
   exitButton: {
@@ -175,7 +174,7 @@ purplexConfig.endGameMenu = {
     textY: 4,
     click: function() {
       Math.seed = purplexConfig.level;
-      drawMenu();
+      return drawMenu();
     }
   }
 };

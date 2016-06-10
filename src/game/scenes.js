@@ -10,7 +10,6 @@ game.module(
     backgroundColor: 0xFFFFFF,
     init: function() {
       game.system.transparent = true;
-      Math.seed = 0;
       var Menu = new game.menu(purplexConfig.menuObj);
     }
   });
